@@ -1,0 +1,28 @@
+export ZSH=$HOME/.oh-my-zsh
+ZSH_THEME="gentoo"
+DISABLE_AUTO_UPDATE="true"
+DISABLE_UPDATE_PROMPT="true"
+
+# peco maybe in ~/.local/bin, so this must be
+# before oh-my-zsh is initialized
+export PATH=$HOME/.local/bin:$PATH
+export EDITOR=vi
+
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#56b6c2,bg=#2a2a2a'
+
+plugins=(
+  git
+  ssh-agent
+  zsh-autosuggestions
+  zsh-peco-history
+)
+
+source $ZSH/oh-my-zsh.sh
+
+export PATH=$HOME/.local/bin:$PATH
+export PYTHONPYCACHEPREFIX=$HOME/tmp/python_cache
+
+# for running peco inside tmux
+peco() {
+  TERM=xterm-256color command peco "$@"
+}

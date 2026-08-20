@@ -1,0 +1,139 @@
+# NICE DCV does not ship an official Debian build. The Ubuntu 24.04 x86_64
+# build installs and runs cleanly on Debian 13 (trixie) anyway -- glibc and
+# systemd are close enough -- but this is unsupported by AWS/NICE, not just
+# untested. Watch for this to break on a future DCV release.
+- name: Create temp dir for the NICE DCV installer
+  become: yes
+  file:
+    path: /tmp/nice-dcv-src
+    state: directory
+    mode: "0755"
+
+- name: Download NICE DCV GPG key
+  become: yes
+  get_url:
+    url: https://d1uj6qtbmh3dt5.cloudfront.net/NICE-GPG-KEY
+    dest: /tmp/nice-dcv-src/NICE-GPG-KEY
+    mode: "0644"
+
+- name: Dearmor NICE DCV GPG key
+  become: yes
+  shell: gpg --dearmor -o /usr/share/keyrings/nice-dcv.gpg /tmp/nice-dcv-src/NICE-GPG-KEY
+  args:
+    creates: /usr/share/keyrings/nice-dcv.gpg
+
+- name: Download NICE DCV server bundle ({{ dcv_version_tag }})
+  become: yes
+  get_url:
+    url: "https://d1uj6qtbmh3dt5.cloudfront.net/nice-dcv-{{ dcv_version_tag }}-x86_64.tgz"
+    dest: /tmp/nice-dcv-src/nice-dcv.tgz
+    mode: "0644"
+
+- name: Extract NICE DCV server bundle
+  become: yes
+  shell: |
+    set -e
+    mkdir -p /tmp/nice-dcv-src/extracted
+    tar -xzf /tmp/nice-dcv-src/nice-dcv.tgz -C /tmp/nice-dcv-src/extracted --strip-components=1
+  args:
+    creates: /tmp/nice-dcv-src/extracted
+
+- name: Find extracted DCV server .deb package
+  find:
+    paths: /tmp/nice-dcv-src/extracted
+    patterns: "nice-dcv-server_*.deb"
+  register: dcv_server_deb
+
+- name: Install NICE DCV server package
+  become: yes
+  apt:
+    deb: "{{ dcv_server_deb.files[0].path }}"
+
+- name: Find extracted DCV web viewer .deb package
+  find:
+    paths: /tmp/nice-dcv-src/extracted
+    patterns: "nice-dcv-web-viewer_*.deb"
+  register: dcv_web_viewer_deb
+
+- name: Install NICE DCV web viewer package
+  become: yes
+  apt:
+    deb: "{{ dcv_web_viewer_deb.files[0].path }}"
+
+- name: Add dcv service account to the video group
+  become: yes
+  ansible.builtin.user:
+    name: dcv
+    groups: video
+    append: yes
+
+- name: Configure DCV session-management and connectivity settings
+  become: yes
+  shell: |
+    set -e
+    python3 - <<'PYEOF'
+    import configparser
+    cfg = configparser.ConfigParser()
+    cfg.read('/etc/dcv/dcv.conf')
+    for section in ('session-management', 'session-management/automatic-console-session', 'connectivity'):
+        if not cfg.has_section(section):
+            cfg.add_section(section)
+    cfg.set('session-management', 'enable-session-management', 'true')
+    cfg.set('session-management/automatic-console-session', 'owner', '{{ new_user_name }}')
+    cfg.set('connectivity', 'web-port', '8443')
+    cfg.set('connectivity', 'quic-port', '8443')
+    with open('/etc/dcv/dcv.conf', 'w') as f:
+        cfg.write(f)
+    PYEOF
+  changed_when: true
+
+- name: Generate a random DCV login password for {{ new_user_name }}
+  become: yes
+  shell: |
+    set -e
+    PASS="$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 20)"
+    echo "{{ new_user_name }}:${PASS}" | chpasswd
+    echo "${PASS}" > /root/{{ new_user_name }}_dcv_password.txt
+    chmod 600 /root/{{ new_user_name }}_dcv_password.txt
+  args:
+    creates: "/root/{{ new_user_name }}_dcv_password.txt"
+
+# The built-in automatic-console-session setting above does not reliably
+# create a session at boot, so a systemd unit force-creates it instead.
+- name: Install systemd unit to force-create the console session at boot
+  become: yes
+  template:
+    src: dcv-console-session.service.j2
+    dest: /etc/systemd/system/dcv-console-session.service
+    mode: "0644"
+
+- name: Reload systemd units
+  become: yes
+  systemd:
+    daemon_reload: yes
+
+- name: Enable the DCV console session unit
+  become: yes
+  systemd:
+    name: dcv-console-session.service
+    enabled: yes
+
+- name: Switch to graphical.target now
+  become: yes
+  command: systemctl isolate graphical.target
+  changed_when: true
+
+- name: Pause for X/gdm to settle
+  ansible.builtin.pause:
+    seconds: 8
+
+# dcvserver's free EC2 license check reads from an S3 bucket via IMDS
+# credentials -- it needs the DCV license IAM instance profile attached
+# (done by the provisioning script before this role runs) or licensing
+# fails with Access Denied and the server won't come up.
+- name: Enable and (re)start dcvserver
+  become: yes
+  systemd:
+    name: dcvserver
+    enabled: yes
+    state: restarted

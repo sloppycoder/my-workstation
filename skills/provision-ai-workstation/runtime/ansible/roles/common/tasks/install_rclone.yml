@@ -1,0 +1,10 @@
+# Debian/Ubuntu's own apt package is stale (1.60.1) vs. current upstream, so
+# install via rclone's official installer instead. Not configured with any
+# backend credentials -- just the binary, run `rclone config` to set one up.
+- name: Install rclone via the official installer
+  become: yes
+  shell:
+    cmd: |
+      set -e
+      curl -fsS https://rclone.org/install.sh | bash
+    creates: /usr/bin/rclone

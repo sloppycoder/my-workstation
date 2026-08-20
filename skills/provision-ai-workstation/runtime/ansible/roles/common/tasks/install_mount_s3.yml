@@ -1,0 +1,49 @@
+# AWS Mountpoint for S3 -- FUSE-mounts an S3 bucket as a local filesystem,
+# e.g. `mount-s3 <bucket> <mountpoint>`. Uses the instance's IAM role
+# credentials automatically (no separate config step, unlike rclone).
+# GPG signature verified against AWS's published key before install, per
+# AWS's own instructions.
+- name: Create temp dir for the Mountpoint for S3 installer
+  become: yes
+  file:
+    path: /tmp/mount-s3-src
+    state: directory
+    mode: "0755"
+
+- name: Download Mountpoint for S3 public key
+  become: yes
+  get_url:
+    url: https://s3.amazonaws.com/mountpoint-s3-release/public_keys/KEYS
+    dest: /tmp/mount-s3-src/KEYS
+    mode: "0644"
+
+- name: Import Mountpoint for S3 public key
+  become: yes
+  shell: gpg --import /tmp/mount-s3-src/KEYS
+  changed_when: true
+
+- name: Download Mountpoint for S3 package
+  become: yes
+  get_url:
+    url: https://s3.amazonaws.com/mountpoint-s3-release/latest/x86_64/mount-s3.deb
+    dest: /tmp/mount-s3-src/mount-s3.deb
+    mode: "0644"
+    force: yes
+
+- name: Download Mountpoint for S3 package signature
+  become: yes
+  get_url:
+    url: https://s3.amazonaws.com/mountpoint-s3-release/latest/x86_64/mount-s3.deb.asc
+    dest: /tmp/mount-s3-src/mount-s3.deb.asc
+    mode: "0644"
+    force: yes
+
+- name: Verify Mountpoint for S3 package signature
+  become: yes
+  shell: gpg --verify /tmp/mount-s3-src/mount-s3.deb.asc /tmp/mount-s3-src/mount-s3.deb
+  changed_when: false
+
+- name: Install Mountpoint for S3
+  become: yes
+  apt:
+    deb: /tmp/mount-s3-src/mount-s3.deb

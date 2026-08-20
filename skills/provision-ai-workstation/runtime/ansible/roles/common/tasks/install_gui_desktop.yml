@@ -1,0 +1,78 @@
+# Preseed BEFORE installing gdm3, otherwise apt can prompt interactively for
+# the default display manager and hang a non-interactive Ansible run.
+- name: Preseed gdm3 as the default display manager
+  become: yes
+  debconf:
+    name: gdm3
+    question: shared/default-x-display-manager
+    value: gdm3
+    vtype: select
+
+- name: Install GNOME desktop and GUI prerequisites
+  become: yes
+  apt:
+    update_cache: yes
+    pkg:
+      - gnome-core
+      - gdm3
+      - gnome-terminal
+      - gnome-tweaks
+      - mesa-utils
+      - xserver-xorg-video-dummy
+      - dbus-x11
+      - fonts-liberation
+      # Required for DCV microphone redirection (AWS's own docs list it as a
+      # prerequisite, but it is not pulled in by any of the packages above).
+      - pulseaudio-utils
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Set graphical.target as the default systemd target
+  become: yes
+  command: systemctl set-default graphical.target
+  changed_when: false
+
+- name: Install Xdummy virtual framebuffer config
+  become: yes
+  template:
+    src: xorg-dummy.conf.j2
+    dest: /etc/X11/xorg.conf
+    mode: "0644"
+
+# gnome-core + gdm3 can leave display-manager.service pointing at a stale or
+# missing target on this AMI, so gdm never actually takes over the console.
+- name: Reassert gdm as the active display manager
+  become: yes
+  shell: |
+    set -e
+    echo "/usr/sbin/gdm3" > /etc/X11/default-display-manager
+    ln -sf /usr/lib/systemd/system/gdm.service /etc/systemd/system/display-manager.service
+    systemctl daemon-reload
+  changed_when: true
+
+- name: Add Google Chrome apt signing key
+  become: yes
+  get_url:
+    url: https://dl.google.com/linux/linux_signing_key.pub
+    dest: /tmp/google-chrome-key.pub
+    mode: "0644"
+
+- name: Dearmor Google Chrome apt signing key
+  become: yes
+  shell: gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg /tmp/google-chrome-key.pub
+  args:
+    creates: /usr/share/keyrings/google-chrome.gpg
+
+- name: Add Google Chrome apt repo
+  become: yes
+  copy:
+    dest: /etc/apt/sources.list.d/google-chrome.list
+    content: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main\n"
+    mode: "0644"
+
+- name: Install Google Chrome
+  become: yes
+  apt:
+    update_cache: yes
+    name: google-chrome-stable
+    state: present

@@ -1,0 +1,22 @@
+- name: Install base packages via APT
+  become: yes
+  apt:
+    update_cache: yes
+    pkg:
+      - acl
+      - curl
+      - ddclient
+      - git
+      - gnupg
+      - ca-certificates
+      - htop
+      - jq
+      - peco
+      - telnet
+      - tmux
+      - unzip
+      - wget
+      - zip
+      - zsh
+  environment:
+    DEBIAN_FRONTEND: noninteractive

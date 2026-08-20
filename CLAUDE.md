@@ -1,0 +1,245 @@
+# CLAUDE
+
+## Purpose
+
+This repo hosts `provision-ai-workstation`, an interview-driven Claude Code
+skill for standing up AWS EC2 AI dev workstations, plus a running record of
+instances actually provisioned with it.
+
+## Running the skill
+
+The skill lives at
+[skills/provision-ai-workstation/SKILL.md](./skills/provision-ai-workstation/SKILL.md)
+(symlinked from `.claude/skills/`, so it's directly invocable). That file is
+the source of truth for the exact procedure and gotchas — this section is
+just the shape of it:
+
+- **Always interviews fresh, every run**: instance name, AWS region, base
+  image (Debian 13 preferred / Ubuntu 24.04 LTS alternative, both official
+  AWS AMIs), GUI desktop + NICE DCV toggle, and which of Claude Code CLI /
+  Codex CLI / Claude Desktop / ChatGPT Desktop to install. There is no
+  stored provider-defaults file — nothing is cached or assumed between runs.
+- **AWS-side orchestration is run as live commands, not a wrapped script.**
+  AMI lookup, VPC/subnet discovery, security group sync, the IAM instance
+  profile, `run-instances`, and waiting for SSH are executed one at a time by
+  whoever runs the skill, so edge cases (no default VPC — true for this
+  account in `ap-northeast-1`, a security group that already exists, a
+  changed public IP) get handled in the moment instead of failing inside a
+  black box.
+- **Every instance gets the same IAM instance profile**, `ai-workstation-role`
+  (account-wide, reused across all instances, GUI or not): DCV license S3
+  read, EC2 start/stop/reboot/status in any region, S3
+  read/write/delete/list on any bucket (delete + abort-multipart granted
+  specifically so Mountpoint for S3 can support `--allow-delete` and
+  writes), Secrets Manager read + discovery in any region, and EBS
+  volume/snapshot management. No `TerminateInstances`, `RunInstances`, or
+  anything touching IAM/VPC/security groups — see SKILL.md §2.4 for the
+  exact policy.
+- **Linux-side bootstrap is a proper Ansible role**, at
+  `skills/provision-ai-workstation/runtime/ansible/`, run via its `setup`
+  entrypoint after SSH is up. It's deterministic and doesn't benefit from
+  live improvisation, unlike the AWS orchestration above.
+- `rclone`, Mountpoint for S3 (`mount-s3`), and `ddclient` are installed
+  **unconditionally** on every instance — not interview questions.
+  `mount-s3` needs no credential setup (uses the instance role directly);
+  `ddclient`'s `/etc/ddclient.conf` ships with dummy Cloudflare placeholder
+  values (`zone=example.com`, etc.) that must be edited in before dynamic
+  DNS actually does anything.
+- **Codex CLI is installed via a direct SSH command after the Ansible run
+  finishes, not as an Ansible task** — its installer hangs forever under
+  Ansible's `become`, which allocates a pty that the installer's trailing
+  interactive shell never gets EOF on.
+
+## Provisioned instances
+
+### aidev Tokyo AI Workstation
+
+EC2 remote workstation for AI agent work, provisioned in `ap-northeast-1`
+(Tokyo) — before `provision-ai-workstation` existed as a skill, this
+instance is what the skill was extracted from.
+
+#### Instance
+
+| | |
+|---|---|
+| Instance ID | `i-0c604ef60d36ad80e` |
+| Name tag | `aidev-workstation` |
+| Region / AZ | ap-northeast-1 (Tokyo) / ap-northeast-1c |
+| Type | m5.xlarge (4 vCPU / 16 GB RAM) |
+| AMI | `ami-0e427b12d3ebd06d9` — official Debian 13 (trixie), `debian-13-amd64-20260810-2566` |
+| Root disk | 40 GB gp3 |
+| Public IP | `54.150.253.173` (**changes on every stop/start** — no Elastic IP attached. Check `aws ec2 describe-instances` for the current address before connecting.) |
+| Key pair | `m1air` (`~/.ssh/id_ed25519` on this Mac) |
+| Security group | `aidev-workstation-sg` (`sg-06d509330b0b837d8`) — ports 22 and 8443 (tcp+udp) open only to the provisioning machine's public IP at the time (`50.224.68.74/32`). If that IP changes, add a new ingress rule before connecting again. |
+| IAM instance profile | `aidev-workstation-role` (renamed from `aidev-workstation-dcv-license` once its scope grew beyond just licensing — old role/profile deleted, swapped live via `replace-iam-instance-profile-association`, no downtime) — see **IAM role permissions** below |
+
+#### Access
+
+```
+ssh admin@54.150.253.173   # original Debian AMI user
+ssh aidev@54.150.253.173   # provisioned dev user, passwordless sudo
+```
+
+Both use the `m1air` key already in `~/.ssh/id_ed25519` on this Mac.
+
+#### IAM role permissions
+
+`aidev-workstation-role`, attached as the instance profile — account-wide, all regions
+(no region condition on the policies):
+
+- **`dcv-license-s3-read`** — `s3:GetObject` on `arn:aws:s3:::dcv-license.ap-northeast-1/*`
+  only. Required for NICE DCV's free EC2 license check.
+- **`s3-and-ec2-broad-access`**:
+  - S3: `GetObject` + `PutObject` on every bucket's objects (`arn:aws:s3:::*/*`), plus
+    `ListBucket` + `ListAllMyBuckets`
+  - EC2: `Describe*` (all read-only queries) + `StartInstances` + `StopInstances` +
+    `RebootInstances`
+  - EBS: create/delete/attach/detach/modify volumes; create/delete/copy snapshots;
+    `CreateTags`
+
+**Deliberately not granted:** `s3:DeleteObject` (only read/write was requested, not
+delete), `ec2:TerminateInstances`, `ec2:RunInstances` (launching new instances), and
+anything touching security groups, VPCs, or IAM itself. Ask if any of these are needed.
+
+#### `aidev` user setup
+
+Provisioned via the Ansible playbook that later became
+[skills/provision-ai-workstation/runtime/ansible](./skills/provision-ai-workstation/runtime/ansible)
+(originally run out of `linux-vm-provisioner`'s equivalent role with
+`enable_local_model_serving=false`, `new_user_sudoer=true`):
+
+- Shell: zsh, with oh-my-zsh + `zsh-autosuggestions` + `zsh-peco-history`
+- `.gitconfig` seeded from the playbook template
+- Passwordless sudo via `/etc/sudoers.d/aidev` (CLI `sudo` works immediately). Also added
+  to the `sudo` Unix group afterward so GNOME/polkit GUI prompts (Settings → timezone,
+  etc.) authenticate as `aidev` instead of falling back to `admin` — the original
+  cloud-init user, display name "Debian" from its GECOS field, whose password is locked
+  (SSH-key-only), which made those GUI prompts a dead end before this fix. **Group
+  membership changes need a fresh login to take effect** — if GUI prompts still show
+  "Debian" after this, log `aidev` out and back in (or restart the DCV console session).
+- `uv` (Astral) and GitHub CLI (`gh`) installed
+- Claude Code CLI installed (`~/.local/bin/claude`, wrapper script `cc`)
+- Base packages: git, htop, jq, peco, tmux, unzip, wget, zip, acl, telnet
+
+OpenAI Codex CLI 0.148.0 — installed natively for `aidev` via the official installer
+(`curl -fsSL https://chatgpt.com/codex/install.sh | sh`), at `~/.local/bin/codex`
+(already on `aidev`'s `$PATH` via `.zshrc`). Briefly installed via `npm install -g
+@openai/codex` first, then uninstalled in favor of the native binary — `nodejs` v20.19.2
+/ `npm` 9.2.0 remain installed from the Debian apt repo regardless. The same installer
+had hung during initial provisioning under Ansible's `become` (which allocates a pty,
+so the installer's trailing interactive shell never received EOF and blocked forever);
+running it directly as `sudo -iu aidev ... < /dev/null` avoided that and completed
+cleanly — this is why `provision-ai-workstation` installs Codex via a direct SSH step
+instead of an Ansible task. Not yet authenticated — run `codex` and sign in with
+ChatGPT on first use.
+
+#### Extra packages
+
+- `redis-server` (running, `redis-cli ping` → `PONG`)
+- `pulseaudio-utils` — required for DCV microphone redirection (AWS's own docs list it as
+  a prerequisite; it wasn't in the original desktop provisioning script). With it
+  installed, DCV exposes a virtual mic (`AWS-Virtual-Microphone`, PipeWire-backed) as the
+  session's default audio input, set automatically when the client enables its mic.
+  Verified end-to-end with a live `parecord` test. If mic audio doesn't come through in
+  the desktop, first check the **microphone toggle inside DCV Viewer itself** and macOS's
+  mic permission grant for DCV Viewer (System Settings → Privacy & Security → Microphone)
+  before assuming a server-side issue.
+- Google Chrome (`google-chrome-stable`, official Google apt repo)
+- Claude Desktop (`claude-desktop`, official Anthropic apt repo — launch from the GNOME
+  app menu or `claude-desktop` and sign in interactively; updates arrive via
+  `apt update && apt upgrade`)
+- ChatGPT Desktop (`chatgpt`, official OpenAI Linux preview app, installed from
+  `persistent.oaistatic.com` — registers its own apt repo at
+  `/etc/apt/sources.list.d/chatgpt.sources` for future updates; launch via `chatgpt` or
+  the GNOME app menu and sign in interactively. This is an OpenAI public preview, so
+  expect rough edges.)
+- `rclone` v1.75.0 — installed via the official `rclone.org/install.sh` script (Debian's
+  own apt package is a stale 1.60.1, still true as of Ubuntu 24.04 / Debian 13 — this is
+  why `provision-ai-workstation` always installs rclone this way). Google Drive support
+  is built into rclone itself, no separate plugin needed — run `rclone config` and pick
+  the `drive` backend.
+- `mount-s3` v1.23.0 (AWS Mountpoint for Amazon S3) — official `.deb` from
+  `s3.amazonaws.com/mountpoint-s3-release`, GPG signature verified against AWS's published
+  key before install. FUSE-mount an S3 bucket with e.g. `mount-s3 <bucket> <mountpoint>`.
+  (Not included in the `provision-ai-workstation` skill — installed manually on this
+  instance only.)
+
+Neither `rclone` nor `mount-s3` has been configured with credentials on this instance —
+packages only, per request.
+
+- Google Cloud CLI (`google-cloud-cli` 581.0.0 — `gcloud`, `gsutil`, `bq`, alpha/beta
+  components) — official Google apt repo (`packages.cloud.google.com/apt`), system-wide,
+  available to both `admin` and `aidev`. Not yet authenticated — run `gcloud init` or
+  `gcloud auth login`. (Also not included in the skill — manual on this instance only.)
+
+#### Desktop / remote access (NICE DCV)
+
+- Desktop: GNOME (`gnome-core` + `gdm3`), Xorg session (Wayland disabled — required by DCV)
+- No GPU on this instance, so the Xdummy driver provides a virtual framebuffer and OpenGL
+  runs in Mesa software rendering — usable but not GPU-accelerated
+- NICE DCV server installed using the **Ubuntu 24.04 x86_64 build** — Debian isn't an
+  officially supported DCV target, but trixie's glibc/systemd are close enough that it
+  installs and runs cleanly
+- A console session for `aidev` is created automatically at boot via a systemd unit
+  (`/etc/systemd/system/dcv-console-session.service`, `WantedBy=graphical.target`) —
+  the built-in `automatic-console-session` setting in `/etc/dcv/dcv.conf` did not
+  reliably trigger session creation, so this unit is the mechanism actually in effect
+- Verified: instance was rebooted and `gdm`, `dcvserver`, the console session, and
+  `redis-server` all came back up automatically with no manual intervention
+
+**Connect:**
+
+- Browser: `https://54.150.253.173:8443` (self-signed cert — click through the browser warning)
+- Or the NICE DCV Viewer desktop app, same address
+- Username: `aidev`
+- Password: see `/root/aidev_dcv_password.txt` on the instance, or rotate it any time with
+  `sudo passwd aidev`
+
+> The DCV login password is **not** included in this file on purpose — read it from the
+> instance directly, and don't commit it anywhere.
+
+#### Dynamic DNS (ddclient → Cloudflare)
+
+Since the instance has no Elastic IP and its public address changes on every
+stop/start, `ddclient` (Debian's `ddclient` 3.11.2-2 package, native
+`cloudflare` protocol support) keeps `station.vino9.net` pointed at the
+current address:
+
+- Config: `/etc/ddclient.conf` (root-only, mode `600`)
+- Checks the public IP via `https://checkip.amazonaws.com` every 5 minutes
+  (`daemon=5m`), then updates the Cloudflare `A` record for
+  `station.vino9.net` in the `vino9.net` zone via the Cloudflare API token
+  auth method (`login=token`)
+- Service: `ddclient.service` (systemd), enabled at boot, currently running
+  with a **dummy placeholder API token** — `password=` in the config is
+  `REPLACE_WITH_REAL_CLOUDFLARE_API_TOKEN` and needs to be swapped for a real
+  Cloudflare API token scoped to the `vino9.net` zone with **Zone - DNS -
+  Edit** and **Zone - Zone - Read** permissions. After updating it, run
+  `sudo systemctl restart ddclient`.
+- The `station.vino9.net` DNS record itself was created directly in the
+  Cloudflare dashboard (not via CLI — no working Cloudflare CLI was found on
+  the provisioning Mac; the only trace was a leftover `cloudflared`
+  LaunchDaemon pointing at a since-removed binary, and `cloudflared` is a
+  tunnel client, not a DNS-record management tool anyway).
+- Verified end-to-end except for the final Cloudflare write: `ddclient -force
+  -verbose` correctly detects the current public IP and correctly calls
+  `api.cloudflare.com`, failing only on the dummy token's invalid
+  `Authorization` header format (Cloudflare error 6003/6111) — confirms
+  network path and request construction are both correct.
+
+This exact pattern (dummy Cloudflare config, real values filled in later) is
+now baked into `provision-ai-workstation` for every instance it creates —
+see `install_ddclient.yml` in the skill's Ansible role.
+
+#### Notes / caveats
+
+- Debian is unsupported-but-working for NICE DCV; if a future DCV release drops
+  compatibility with the Ubuntu 24.04 package's dependencies, reinstalling against a
+  newer Ubuntu build tag may be needed.
+- The security group is locked to a single `/32` CIDR. Widen it (or switch to a VPN /
+  Session Manager tunnel) if you need to connect from a different network.
+- No instance-store/EBS snapshot or backup schedule was configured — the 40 GB root
+  volume is the only copy of this workstation's state.
+- `apt update && apt upgrade` has been run and completed cleanly (no held/broken packages,
+  no reboot required). All services (`gdm`, `dcvserver`, `dcv-console-session`,
+  `redis-server`) were confirmed active afterward.

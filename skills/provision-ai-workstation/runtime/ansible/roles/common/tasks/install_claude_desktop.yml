@@ -1,0 +1,20 @@
+- name: Add Claude Desktop apt signing key
+  become: yes
+  get_url:
+    url: https://downloads.claude.ai/claude-desktop/key.asc
+    dest: /usr/share/keyrings/claude-desktop-archive-keyring.asc
+    mode: "0644"
+
+- name: Add Claude Desktop apt repo
+  become: yes
+  copy:
+    dest: /etc/apt/sources.list.d/claude-desktop.list
+    content: "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/claude-desktop-archive-keyring.asc] https://downloads.claude.ai/claude-desktop/apt/stable stable main\n"
+    mode: "0644"
+
+- name: Install Claude Desktop
+  become: yes
+  apt:
+    update_cache: yes
+    name: claude-desktop
+    state: present

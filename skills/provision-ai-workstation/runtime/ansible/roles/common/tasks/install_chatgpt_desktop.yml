@@ -1,0 +1,15 @@
+# OpenAI's Linux build is a public preview distributed as a standalone .deb,
+# not from a pre-existing apt repo. Installing it registers its own apt
+# source (/etc/apt/sources.list.d/chatgpt.sources) for future `apt upgrade`s.
+- name: Download ChatGPT Desktop .deb
+  become: yes
+  get_url:
+    url: https://persistent.oaistatic.com/codex-app-prod/linux/deb/latest/chatgpt_amd64.deb
+    dest: /tmp/chatgpt_amd64.deb
+    mode: "0644"
+    force: yes
+
+- name: Install ChatGPT Desktop
+  become: yes
+  apt:
+    deb: /tmp/chatgpt_amd64.deb

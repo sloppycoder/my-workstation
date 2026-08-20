@@ -1,0 +1,13 @@
+[Unit]
+Description=Create default {{ new_user_name }} DCV console session
+After=dcvserver.service graphical.target
+Requires=dcvserver.service
+Wants=graphical.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/dcv create-session --type console --owner {{ new_user_name }} console
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical.target

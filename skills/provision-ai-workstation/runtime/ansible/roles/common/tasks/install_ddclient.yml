@@ -1,0 +1,30 @@
+# Writes a placeholder /etc/ddclient.conf for Cloudflare dynamic DNS -- this
+# instance has no Elastic IP, so its public IP changes on every stop/start.
+# The zone/hostname/token below are dummy values; swap them for the real
+# Cloudflare zone, hostname, and an API token scoped to that zone with
+# Zone - DNS - Edit and Zone - Zone - Read permissions, then:
+#   sudo systemctl restart ddclient
+- name: Write placeholder ddclient.conf (Cloudflare dynamic DNS)
+  become: yes
+  copy:
+    dest: /etc/ddclient.conf
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      daemon=5m
+      syslog=yes
+      ssl=yes
+      use=web, web=https://checkip.amazonaws.com/
+      protocol=cloudflare
+      zone={{ ddclient_zone }}
+      login=token
+      password={{ ddclient_cloudflare_api_token }}
+      {{ ddclient_hostname }}
+
+- name: Enable and (re)start ddclient
+  become: yes
+  systemd:
+    name: ddclient
+    enabled: yes
+    state: restarted

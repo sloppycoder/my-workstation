@@ -1,0 +1,20 @@
+peco_version: v0.5.11
+gh_cli_version: 2.78.0
+dcv_version_tag: ubuntu2404
+
+new_user_name: aidev
+new_user_sudoer: true
+authorized_pub_key: "{{ lookup('file', '~/.ssh/id_ed25519.pub', errors='ignore') }}"
+
+# Set by the provisioning script based on the interview answers.
+enable_gui: false
+install_claude_code: false
+install_claude_desktop: false
+install_chatgpt_desktop: false
+
+# Dummy placeholders -- /etc/ddclient.conf is written with these and will
+# fail Cloudflare auth until replaced with real values. Override with
+# -e ddclient_zone=... -e ddclient_hostname=... -e ddclient_cloudflare_api_token=...
+ddclient_zone: example.com
+ddclient_hostname: workstation.example.com
+ddclient_cloudflare_api_token: REPLACE_WITH_REAL_CLOUDFLARE_API_TOKEN
