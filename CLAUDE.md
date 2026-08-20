@@ -38,7 +38,12 @@ just the shape of it:
 - **Linux-side bootstrap is a proper Ansible role**, at
   `skills/provision-ai-workstation/runtime/ansible/`, run via its `setup`
   entrypoint after SSH is up. It's deterministic and doesn't benefit from
-  live improvisation, unlike the AWS orchestration above.
+  live improvisation, unlike the AWS orchestration above. If `ansible-playbook`
+  isn't already available on the provisioning machine, the preferred install
+  method is `uv tool install ansible` (not apt/pip/brew) — the role uses the
+  `ansible.posix.authorized_key` module, which needs the full `ansible`
+  package rather than just `ansible-core`; `uv tool install` keeps it
+  isolated rather than mixed into system Python.
 - `rclone`, Mountpoint for S3 (`mount-s3`), and `ddclient` are installed
   **unconditionally** on every instance — not interview questions.
   `mount-s3` needs no credential setup (uses the instance role directly);
