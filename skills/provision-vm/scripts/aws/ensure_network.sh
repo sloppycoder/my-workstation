@@ -30,13 +30,31 @@ if [[ -z "${VPC_ID}" ]]; then
   fi
 fi
 
+# A subnet is public if its route table (explicit association, else the VPC's main
+# table) sends 0.0.0.0/0 to an internet gateway. MapPublicIpOnLaunch is irrelevant:
+# create_vm.sh asks for a public IP explicitly.
 if [[ -z "${SUBNET_ID}" ]]; then
-  SUBNET_ID="$("${A[@]}" describe-subnets --filters "Name=vpc-id,Values=${VPC_ID}" \
-    "Name=map-public-ip-on-launch,Values=true" --query 'Subnets[0].SubnetId' --output text)"
-  if [[ "${SUBNET_ID}" == "None" ]]; then
+  TMP="$(mktemp -d)"; trap 'rm -rf "${TMP}"' EXIT
+  "${A[@]}" describe-route-tables --filters "Name=vpc-id,Values=${VPC_ID}" --output json > "${TMP}/rt.json"
+  "${A[@]}" describe-subnets --filters "Name=vpc-id,Values=${VPC_ID}" --output json > "${TMP}/sn.json"
+  SUBNET_ID="$(python3 -I - "${TMP}/rt.json" "${TMP}/sn.json" <<'PY'
+import json, sys
+rts = json.load(open(sys.argv[1]))["RouteTables"]
+subnets = json.load(open(sys.argv[2]))["Subnets"]
+def public(table):
+    return any(r.get("DestinationCidrBlock") == "0.0.0.0/0" and str(r.get("GatewayId", "")).startswith("igw-")
+               for r in table["Routes"])
+main = [t for t in rts if any(a.get("Main") for a in t["Associations"])]
+for s in sorted(subnets, key=lambda s: (s["AvailabilityZone"], s["SubnetId"])):
+    own = [t for t in rts if any(a.get("SubnetId") == s["SubnetId"] for a in t["Associations"])]
+    if any(public(t) for t in (own or main)):
+        print(s["SubnetId"]); break
+PY
+)"
+  if [[ -z "${SUBNET_ID}" ]]; then
     "${A[@]}" describe-subnets --filters "Name=vpc-id,Values=${VPC_ID}" \
       --query 'Subnets[].[SubnetId,AvailabilityZone,MapPublicIpOnLaunch]' --output table >&2
-    echo "ERROR: no public subnet in ${VPC_ID}; a private subnet would be unreachable. Re-run with --subnet-id" >&2
+    echo "ERROR: no subnet in ${VPC_ID} routes to an internet gateway; a private subnet would be unreachable. Re-run with --subnet-id" >&2
     exit 4
   fi
 fi

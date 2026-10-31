@@ -82,5 +82,11 @@ Useful keys: `SEED_PREFIX` (seed snapshot/AMI name prefix, default the VM name),
   replaced only after READY), recreate from the seed (~1m40s, all tools present),
   `create_vm.sh` exit 5 on a nonexistent machine type (boot disk cleaned up), and
   `destroy_vm.sh`.
-- **AWS: not yet run** (AMI-based seed, EBS scratch with LABEL fstab, NoDevice to keep the
-  scratch volume out of the AMI). Test on a throwaway VM first.
+- **AWS: tested end to end on 2026-11-01** in us-west-2 with a throwaway VM: first
+  seed AMI (4 min), seed refresh with a scratch volume attached (AMI holds only the
+  root device; the old seed was replaced), live scratch add (LABEL fstab on an NVMe
+  device) and remove, shelve `--delete`, recreate from the seed (~3 min, all tools
+  present) and `destroy_vm.sh` (instance, AMI + snapshots, security group, config and
+  ssh alias all gone). The exit-5 matcher was checked against AWS's real
+  bad-instance-type error text, but not end to end (create_vm refuses when the VM
+  exists).

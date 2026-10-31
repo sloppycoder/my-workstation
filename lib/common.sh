@@ -56,7 +56,7 @@ load_instance() {  # load_instance NAME  -> exports defaults.env, then NAME.env
 # this zone, unsupported, or out of capacity). The caller (Claude) must ask the
 # user for another type; see "Machine type unavailable" in the SKILL.md files.
 type_unavailable_p() {  # type_unavailable_p ERRFILE
-  grep -qiE "machine type.*(does not exist|not found)|machineTypes/.*not found|ZONE_RESOURCE_POOL_EXHAUSTED|does not have enough resources|InsufficientInstanceCapacity|Unsupported|not supported in your requested Availability Zone|InvalidInstanceType" "$1"
+  grep -qiE "machine type.*(does not exist|not found)|machineTypes/.*not found|ZONE_RESOURCE_POOL_EXHAUSTED|does not have enough resources|InsufficientInstanceCapacity|Unsupported|not supported in your requested Availability Zone|InvalidInstanceType|for InstanceType|Your requested instance type .* is not supported" "$1"
 }
 exit_type_unavailable() {  # exit_type_unavailable TYPE
   kv MACHINE_TYPE_UNAVAILABLE "$1"

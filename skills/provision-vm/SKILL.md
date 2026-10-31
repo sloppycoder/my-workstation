@@ -161,8 +161,11 @@ script waits 10 s (GCP: 15 s) for IAM propagation.
 8. gcloud's long "wait for operation" call is sometimes dropped by a proxy although
    the operation succeeds; GCP scripts tolerate the error and poll the real state.
    "…reported an error; checking whether it went through" is normal.
-9. Status: the GCP path (`scripts/gcp/*`, `gcsfuse`, bootstrap, register) was tested
-   end to end on 2026-11-01. Not yet run: `scripts/aws/*` after the refactor out of
-   live commands, and GUI/DCV. Verify with a throwaway VM and delete it afterwards.
+9. Status: GCP (`scripts/gcp/*`, `gcsfuse`) and AWS without GUI (`scripts/aws/*`,
+   `mount-s3`, no default VPC fallback) were tested end to end on 2026-11-01 in the
+   Oregon regions. **Not yet run: the GUI/DCV path** (`enable_gui` on AWS). Verify with
+   a throwaway VM and delete it afterwards.
+   AWS subnets are chosen by route table (a route to an internet gateway), not by
+   `MapPublicIpOnLaunch`, which can be false on perfectly public subnets.
 10. One ssh login can take 2–3 s, so `runtime/ansible/setup` enables ssh
    multiplexing + pipelining; without it the role took 13+ minutes instead of ~1.5.

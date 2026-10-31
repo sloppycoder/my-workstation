@@ -12,7 +12,7 @@ while [[ $# -gt 0 ]]; do case "$1" in
   --root-device) ROOT="$2"; shift 2 ;; --instance-type) TYPE="$2"; shift 2 ;; --volume-gb) GB="$2"; shift 2 ;;
   --key-name) KEY="$2"; shift 2 ;; --subnet-id) SUBNET="$2"; shift 2 ;; --sg-id) SG="$2"; shift 2 ;;
   --profile) PROFILE="$2"; shift 2 ;; *) die "unknown flag $1" ;; esac; done
-for v in REGION NAME IMAGE ROOT TYPE GB KEY SUBNET SG; do [[ -n "${!v}" ]] || die "missing --${v,,}"; done
+for v in REGION NAME IMAGE ROOT TYPE GB KEY SUBNET SG; do [[ -n "${!v}" ]] || die "missing --$(echo "${v}" | tr 'A-Z_' 'a-z-')"; done
 
 EXISTING="$(aws ec2 describe-instances --region "${REGION}" \
   --filters "Name=tag:Name,Values=${NAME}" "Name=instance-state-name,Values=pending,running,stopping,stopped" \
