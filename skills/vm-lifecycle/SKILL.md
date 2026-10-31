@@ -56,6 +56,25 @@ exists. A stopped VM still bills for its disks.
   by a proxy (they tolerate the error and poll the real state), and the AWS seed is an
   AMI created with the scratch device excluded.
 
+## Machine type unavailable (`create_vm.sh` exit 5)
+
+If the type stored in the config (`MACHINE_TYPE`/`INSTANCE_TYPE`) is unavailable in
+the zone or out of capacity, `create_vm.sh` prints `MACHINE_TYPE_UNAVAILABLE=<type>`
+and exits **5**, having cleaned up (the half-made boot disk is deleted). Don't
+retry the same type. Run `provision-vm/scripts/<provider>/similar_types.sh` (same
+vCPU, memory ±25%), ask the user to pick (offer the closest 2–3, with a
+recommendation), and re-run with `--machine-type` / `--instance-type`. If they say
+"any similar one", choose the closest yourself (same family first, then cheapest) and
+say what you chose. Offer to update the type in `~/.config/station-vm/<name>.env`
+if the new one should be the default.
+
+## Settings
+
+Per-VM settings: `~/.config/station-vm/<name>.env` (see above). Optional user-wide
+`~/.config/station-vm/defaults.env` is loaded first; the per-VM file overrides it.
+Useful keys: `SEED_PREFIX` (seed snapshot/AMI name prefix, default the VM name),
+`SNAPSHOT_LOCATION` (GCP storage location, e.g. `us`), `MACHINE_TYPE`.
+
 ## Status
 
 Untested end to end on a live VM except the read-only plan output (`--yes` omitted).

@@ -19,13 +19,15 @@ EXISTING="$(aws ec2 describe-instances --region "${REGION}" \
   --query 'Reservations[].Instances[].InstanceId' --output text)"
 [[ -z "${EXISTING}" ]] || die "an instance named ${NAME} already exists (${EXISTING})"
 
+ERR="$(mktemp)"; trap 'rm -f "${ERR}"' EXIT
 ID="$(aws ec2 run-instances --region "${REGION}" \
   --image-id "${IMAGE}" --instance-type "${TYPE}" --key-name "${KEY}" \
   --iam-instance-profile "Name=${PROFILE}" \
   --block-device-mappings "[{\"DeviceName\":\"${ROOT}\",\"Ebs\":{\"VolumeSize\":${GB},\"VolumeType\":\"gp3\",\"DeleteOnTermination\":true}}]" \
   --network-interfaces "[{\"DeviceIndex\":0,\"SubnetId\":\"${SUBNET}\",\"Groups\":[\"${SG}\"],\"AssociatePublicIpAddress\":true}]" \
   --tag-specifications "[{\"ResourceType\":\"instance\",\"Tags\":[{\"Key\":\"Name\",\"Value\":\"${NAME}\"},{\"Key\":\"ManagedBy\",\"Value\":\"my-workstation\"}]}]" \
-  --query 'Instances[0].InstanceId' --output text)"
+  --query 'Instances[0].InstanceId' --output text 2>"${ERR}")" \
+  || { cat "${ERR}" >&2; ! type_unavailable_p "${ERR}" || exit_type_unavailable "${TYPE}"; exit 1; }
 log "Launched ${ID}; waiting for running + status ok"
 aws ec2 wait instance-running --region "${REGION}" --instance-ids "${ID}"
 aws ec2 wait instance-status-ok --region "${REGION}" --instance-ids "${ID}"

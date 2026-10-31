@@ -37,10 +37,31 @@ wait_ssh() {  # wait_ssh USER HOST KEYFILE [TRIES]
 
 # ---- per-instance config -------------------------------------------------
 
-load_instance() {  # load_instance NAME  -> exports the variables in NAME.env
+# Optional user-wide defaults (GCP_PROJECT, GCP_ZONE, AWS_REGION, SSH_KEY,
+# IMAGE_OS, ROOT_GB, SEED_PREFIX, ...). The interview proposes these as answers;
+# a per-instance file overrides them.
+load_defaults() {
+  local f="${CONFIG_DIR}/defaults.env"
+  [[ ! -f "${f}" ]] || { set -a; . "${f}"; set +a; }
+}
+
+load_instance() {  # load_instance NAME  -> exports defaults.env, then NAME.env
   local f="${CONFIG_DIR}/$1.env"
   [[ -f "${f}" ]] || die "no config for instance '$1' (${f}); provision it first"
+  load_defaults
   set -a; . "${f}"; set +a
+}
+
+# Exit code 5 = the requested machine/instance type is not available (unknown in
+# this zone, unsupported, or out of capacity). The caller (Claude) must ask the
+# user for another type; see "Machine type unavailable" in the SKILL.md files.
+type_unavailable_p() {  # type_unavailable_p ERRFILE
+  grep -qiE "machine type.*(does not exist|not found)|machineTypes/.*not found|ZONE_RESOURCE_POOL_EXHAUSTED|does not have enough resources|InsufficientInstanceCapacity|Unsupported|not supported in your requested Availability Zone|InvalidInstanceType" "$1"
+}
+exit_type_unavailable() {  # exit_type_unavailable TYPE
+  kv MACHINE_TYPE_UNAVAILABLE "$1"
+  echo "ERROR: machine/instance type $1 is not available here" >&2
+  exit 5
 }
 
 save_instance() {  # save_instance NAME KEY=VALUE...   (rewrites the file)

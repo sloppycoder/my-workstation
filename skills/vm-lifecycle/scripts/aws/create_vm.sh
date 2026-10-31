@@ -20,11 +20,13 @@ if [[ -x "${NET}" ]]; then "${NET}" --region "${REGION}" --name "${NAME}" --subn
 else log "WARNING: ensure_network.sh not found; security group source IP not refreshed"; fi
 
 log "Creating ${NAME} (${TYPE}) from ${AMI}..."
+ERR="$(mktemp)"; trap 'rm -f "${ERR}"' EXIT
 IID="$("${A[@]}" ec2 run-instances --image-id "${AMI}" --instance-type "${TYPE}" --key-name "${KEY_NAME}" \
   --iam-instance-profile "Name=${PROFILE_NAME:-ai-workstation-role}" \
   --network-interfaces "[{\"DeviceIndex\":0,\"SubnetId\":\"${SUBNET_ID}\",\"Groups\":[\"${SECURITY_GROUP_ID}\"],\"AssociatePublicIpAddress\":true}]" \
   --tag-specifications "[{\"ResourceType\":\"instance\",\"Tags\":[{\"Key\":\"Name\",\"Value\":\"${NAME}\"},{\"Key\":\"ManagedBy\",\"Value\":\"my-workstation\"}]}]" \
-  --query 'Instances[0].InstanceId' --output text)"
+  --query 'Instances[0].InstanceId' --output text 2>"${ERR}")" \
+  || { cat "${ERR}" >&2; ! type_unavailable_p "${ERR}" || exit_type_unavailable "${TYPE}"; exit 1; }
 "${A[@]}" ec2 wait instance-running --instance-ids "${IID}"
 "${A[@]}" ec2 wait instance-status-ok --instance-ids "${IID}"
 refresh_ssh "${NAME}" "$(vm_ip)"

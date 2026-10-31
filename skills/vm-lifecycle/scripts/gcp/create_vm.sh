@@ -22,11 +22,18 @@ log "Creating ${NAME} (${TYPE}) from ${SEED}..."
 gcloud compute disks create "${NAME}" "${GC[@]}" --source-snapshot="${SEED}" --type=pd-balanced \
   || log "create reported an error; checking whether it went through..."
 poll 36 has_status disks "${NAME}" READY || die "boot disk ${NAME} did not become READY"
+ERR="$(mktemp)"; trap 'rm -f "${ERR}"' EXIT
 gcloud compute instances create "${NAME}" "${GC[@]}" --machine-type="${TYPE}" \
   --disk="name=${NAME},boot=yes,auto-delete=yes,device-name=${NAME}" \
   --network-interface=network=default,subnet=default,network-tier=PREMIUM \
   --service-account="${SERVICE_ACCOUNT}" --scopes=cloud-platform --tags="${NAME}" \
-  --labels=managed-by=my-workstation || log "create reported an error; checking whether it went through..."
+  --labels=managed-by=my-workstation 2>"${ERR}" \
+  || { cat "${ERR}" >&2
+       if type_unavailable_p "${ERR}"; then   # don't leave the boot disk behind
+         gcloud compute disks delete "${NAME}" "${GC[@]}" --quiet || log "could not delete boot disk ${NAME}"
+         exit_type_unavailable "${TYPE}"
+       fi
+       log "create reported an error; checking whether it went through..."; }
 poll 36 has_status instances "${NAME}" RUNNING || die "instance ${NAME} is not RUNNING"
 refresh_ssh "${NAME}" "$(vm_ip)"
 log "${NAME} is up: ssh ${NAME}   (no scratch disk yet: add_scratch.sh ${NAME})"

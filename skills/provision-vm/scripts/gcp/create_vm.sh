@@ -20,14 +20,16 @@ running() { [[ "$(status)" == RUNNING ]]; }
 [[ -z "$(status)" ]] || die "instance ${NAME} already exists"
 
 KEY="$(cut -d' ' -f1,2 "${PUB}")"
+ERR="$(mktemp)"; trap 'rm -f "${ERR}"' EXIT
 gcloud compute instances create "${NAME}" "${GC[@]}" --machine-type="${TYPE}" \
   --image-family="${IMGF}" --image-project="${IMGP}" \
   --boot-disk-size="${GB}GB" --boot-disk-type=pd-balanced \
   --network-interface=network=default,subnet=default,network-tier=PREMIUM \
   --service-account="${SA}" --scopes=cloud-platform --tags="${NAME}" \
   --labels=managed-by=my-workstation \
-  --metadata="ssh-keys=${BOOT_USER}:${KEY}" >/dev/null \
-  || log "create reported an error; checking whether it went through..."
+  --metadata="ssh-keys=${BOOT_USER}:${KEY}" >/dev/null 2>"${ERR}" \
+  || { cat "${ERR}" >&2; ! type_unavailable_p "${ERR}" || exit_type_unavailable "${TYPE}"
+       log "create reported an error; checking whether it went through..."; }
 poll 36 running || die "instance ${NAME} is not RUNNING"
 IP="$(gcloud compute instances describe "${NAME}" "${GC[@]}" --format='value(networkInterfaces[0].accessConfigs[0].natIP)')"
 kv INSTANCE_ID "${NAME}"; kv PUBLIC_IP "${IP}"

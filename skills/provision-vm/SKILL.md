@@ -18,6 +18,11 @@ There is no stored defaults file; every run interviews fresh.
 
 ## 1. Interview (always ask, every run)
 
+If `~/.config/station-vm/defaults.env` exists, read it first and propose its values
+as the answers (`AWS_REGION`, `GCP_PROJECT`, `GCP_ZONE`, `SSH_KEY`, `IMAGE_OS`
+= `debian13|ubuntu2404`, `ROOT_GB`, `MACHINE_TYPE`, `SEED_PREFIX`); the user can
+accept or override each. Never write that file without being asked.
+
 Ask in plain chat as **one numbered batch** with the defaults shown, so it works
 in any agent (use a structured question tool only if one is available). If the
 user's request already answers an item, don't re-ask it.
@@ -64,6 +69,15 @@ Substitute `aws`/`gcp` for `$P` below. Flags are shown in each script's header.
    See §4 for what it grants and what it deliberately doesn't.
 4. **Create** — `scripts/$P/create_vm.sh`. Waits until the VM is up and prints
    `INSTANCE_ID`, `PUBLIC_IP`. Refuses if a VM with that name exists.
+   **Exit 5 = the machine/instance type is not available** in that zone (unknown
+   there, unsupported, or out of capacity; the script prints
+   `MACHINE_TYPE_UNAVAILABLE=<type>`). Don't retry the same type and don't give up:
+   run `scripts/$P/similar_types.sh` (same vCPU, memory ±25%; GCP: `--project --zone
+   --vcpus --mem-gb`, AWS: `--region --vcpus --mem-gb [--az]`), then **ask the user
+   to pick**, offering the closest 2–3 with a recommendation. If they answer "any
+   similar one", pick the closest match yourself (prefer the same family, then the
+   cheapest) and say which you chose. Re-run `create_vm.sh` with the new type and
+   use that type in step 6 (`register.sh`). Nothing is left behind on exit 5.
 5. **Bootstrap** — `scripts/bootstrap.sh --host $PUBLIC_IP --user $BOOT_USER
    --key KEY --provider $P [--gui] [--claude-code] [--codex] [--claude-desktop]
    [--chatgpt-desktop]`. Runs the Ansible role, then installs Codex over a direct

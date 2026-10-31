@@ -14,7 +14,7 @@ while [[ $# -gt 0 ]]; do case "$1" in --delete) DELETE=1; shift ;; --yes) YES=1;
 STATUS="$(vm_status)"
 [[ -n "${STATUS}" ]] || die "instance ${NAME} not found"
 BOOT="$(attached_disk boot)"; SCRATCH="$(attached_disk scratch)"
-SNAP="${NAME}-seed-$(date -u +%Y%m%d-%H%M%S)"
+SNAP="${SEED_PREFIX:-${NAME}}-seed-$(date -u +%Y%m%d-%H%M%S)"
 OLD="$(seeds)"
 
 log "Will: stop ${NAME} (${STATUS}); snapshot ${BOOT} -> ${SNAP};${OLD:+ delete old seed(s) $(echo ${OLD});}"

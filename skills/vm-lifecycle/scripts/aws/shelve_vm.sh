@@ -13,7 +13,7 @@ while [[ $# -gt 0 ]]; do case "$1" in --delete) DELETE=1; shift ;; --yes) YES=1;
   *) die "usage: shelve_vm.sh NAME [--delete] [--yes]" ;; esac; done
 IID="$(instance_id)"; [[ -n "${IID}" ]] || die "instance ${NAME} not found"
 STATE="$(vm_state)"; SCRATCH="$(scratch_vol)"; OLD="$(seeds)"
-AMI_NAME="${NAME}-seed-$(date -u +%Y%m%d-%H%M%S)"
+AMI_NAME="${SEED_PREFIX:-${NAME}}-seed-$(date -u +%Y%m%d-%H%M%S)"
 log "Will: stop ${NAME} (${IID}, ${STATE}); create AMI ${AMI_NAME} from its root disk;${OLD:+ delete old seed(s) $(echo ${OLD});}"
 if ((DELETE)); then log "     then TERMINATE ${NAME}${SCRATCH:+ and delete scratch volume ${SCRATCH} (data lost)}."
 else log "     then start ${NAME} again (scratch volume, if any, stays attached and is not imaged)."; fi

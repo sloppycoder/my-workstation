@@ -36,6 +36,10 @@ interview, scripts that print `KEY=value` and take `--flags`.
 - Per-VM settings live **outside the repo** in `~/.config/station-vm/<name>.env`
   (written by `provision-vm/scripts/register.sh`); never commit project ids, keys
   or tokens.
+- Optional `~/.config/station-vm/defaults.env` supplies user-wide defaults
+  (interview proposals, `SEED_PREFIX`, `SNAPSHOT_LOCATION`); per-VM files override it.
+- `create_vm.sh` exits **5** when the machine type is unavailable; the skill then
+  runs `similar_types.sh` and asks the user to pick another (see the SKILL.md files).
 - Destructive lifecycle scripts print a plan and need `--yes`. Never pass `--yes`
   without the user's explicit go-ahead; creating/deleting cloud resources costs money.
 - Cloud CLI calls that a proxy may drop are `cmd || log ...` followed by `poll`.
