@@ -1,5 +1,5 @@
 ---
-name: provision-workstation
+name: provision-vm
 description: Interview the user, then provision a cloud dev workstation on AWS (EC2) or GCP (Compute Engine) — optionally with a GNOME desktop + NICE DCV remote desktop (AWS only) and a chosen subset of Claude Code CLI / Codex CLI / Claude Desktop / ChatGPT Desktop — using the bundled per-provider scripts, then the bundled Ansible role for the Linux-side bootstrap.
 ---
 

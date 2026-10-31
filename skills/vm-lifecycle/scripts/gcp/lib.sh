@@ -1,6 +1,6 @@
 # Shared by the GCP vm-lifecycle scripts (sourced, not run).
 # Every script is called `script.sh NAME [args]`; NAME selects
-# ~/.config/station-vm/NAME.env (written by provision-workstation's register.sh).
+# ~/.config/station-vm/NAME.env (written by provision-vm's register.sh).
 #
 # gcloud's long "wait for operation" call is sometimes dropped by a proxy
 # (ProxyError) although the operation proceeds. So every mutating command is
@@ -38,7 +38,7 @@ vm_ip() { gcloud compute instances describe "${NAME}" "${GC[@]}" --format='value
 # seed snapshots for this VM, newest first (READY only with "ready")
 seeds() {
   local f="labels.station-vm-seed=${NAME}"; [[ "${1:-}" == ready ]] && f+=" AND status=READY"
-  gcloud compute snapshots list --project="${PROJECT}" --filter="${f}" --sort-by=~creationTimestamp --format='value(name)'
+  gcloud compute snapshots list --project="${PROJECT}" --filter="${f}" --sort-by=~creationTimestamp --format='value(name)' 2>/dev/null
 }
 stop_vm() {
   log "Stopping ${NAME}..."

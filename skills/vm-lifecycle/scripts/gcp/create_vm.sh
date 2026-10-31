@@ -15,7 +15,7 @@ while [[ $# -gt 0 ]]; do case "$1" in
 : "${SERVICE_ACCOUNT:?SERVICE_ACCOUNT missing in config}"
 
 # Your public IP may have changed since the VM was last up: refresh the firewall rule.
-FW="$(dirname "${BASH_SOURCE[0]}")/../../../provision-workstation/scripts/gcp/ensure_network.sh"
+FW="$(dirname "${BASH_SOURCE[0]}")/../../../provision-vm/scripts/gcp/ensure_network.sh"
 if [[ -x "${FW}" ]]; then "${FW}" --project "${PROJECT}" --name "${NAME}" >/dev/null; else log "WARNING: ensure_network.sh not found; firewall source IP not refreshed"; fi
 
 log "Creating ${NAME} (${TYPE}) from ${SEED}..."
