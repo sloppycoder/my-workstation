@@ -20,6 +20,7 @@ from growing as more VMs are provisioned.
 lib/             common.sh, update_ssh_config.py   (shared by all scripts)
 skills/provision-vm/    SKILL.md, scripts/{aws,gcp}/, scripts/*.sh, runtime/ansible/
 skills/vm-lifecycle/    SKILL.md, scripts/{aws,gcp}/
+examples/        *.env.example: reference copies of ~/.config/station-vm/*.env
 docs/instances/  one file per provisioned VM
 ```
 
