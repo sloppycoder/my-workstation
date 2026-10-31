@@ -1,0 +1,46 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Ec2StartStopStatus",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:StartInstances",
+        "ec2:StopInstances",
+        "ec2:RebootInstances"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "S3ReadWriteDeleteList",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:AbortMultipartUpload"],
+      "Resource": "arn:aws:s3:::*/*"
+    },
+    {
+      "Sid": "S3BucketList",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": "arn:aws:s3:::*"
+    },
+    { "Sid": "S3ListAllBuckets", "Effect": "Allow", "Action": "s3:ListAllMyBuckets", "Resource": "*" },
+    {
+      "Sid": "SecretsManagerReadAndDiscover",
+      "Effect": "Allow",
+      "Action": ["secretsmanager:GetSecretValue", "secretsmanager:ListSecrets", "secretsmanager:DescribeSecret"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EbsVolumeAndSnapshotManagement",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVolume", "ec2:DeleteVolume", "ec2:AttachVolume", "ec2:DetachVolume",
+        "ec2:ModifyVolume", "ec2:CreateSnapshot", "ec2:DeleteSnapshot", "ec2:CopySnapshot",
+        "ec2:CreateTags"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
