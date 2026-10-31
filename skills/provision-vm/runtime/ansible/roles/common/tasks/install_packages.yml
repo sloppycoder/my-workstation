@@ -12,6 +12,7 @@
       - htop
       - jq
       - peco
+      - rclone
       - telnet
       - tmux
       - unzip

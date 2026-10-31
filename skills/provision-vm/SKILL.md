@@ -98,8 +98,8 @@ Substitute `aws`/`gcp` for `$P` below. Flags are shown in each script's header.
 
 ### What the Ansible role does
 
-Base (always): packages (incl. `ddclient`) → `aidev` user → `uv` → oh-my-zsh →
-GitHub CLI → rclone (official installer; distro package is stale) → bucket mount
+Base (always): packages (incl. `ddclient` and the distro `rclone`) → `aidev` user → `uv` → oh-my-zsh →
+GitHub CLI → bucket mount
 (AWS: Mountpoint for S3 `mount-s3`, GPG-verified; GCP: `gcsfuse`; both use the VM's
 own identity, no credentials to set up) → `ddclient` → Claude Code CLI (if chosen).
 GUI (`tasks/gui.yml`, only when `enable_gui` **and** `cloud_provider=aws`): `sudo`

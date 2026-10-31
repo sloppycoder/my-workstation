@@ -14,7 +14,6 @@
 - import_tasks: install_uv.yml
 - import_tasks: install_oh_my_zsh.yml
 - import_tasks: install_gh_cli.yml
-- import_tasks: install_rclone.yml
 - import_tasks: install_mount_s3.yml
   when: cloud_provider == 'aws'
 - import_tasks: install_gcsfuse.yml

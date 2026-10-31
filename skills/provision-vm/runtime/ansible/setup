@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# pass ip and username from command line
+# usage: setup HOST USER [ansible-playbook args...]
+# One ssh login can take 2-3 s (sshd/PAM/guest agent) and Ansible opens several
+# per task, so reuse a single connection (ControlPersist) and pipeline modules.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ANSIBLE_SSH_ARGS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+export ANSIBLE_PIPELINING=True ANSIBLE_SSH_RETRIES=5
+ANSIBLE_SSH_ARGS="-o ControlMaster=auto -o ControlPersist=300s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
 ansible-playbook -i "$1," "${SCRIPT_DIR}/playbook.yml" -u "$2" "${@:3}"

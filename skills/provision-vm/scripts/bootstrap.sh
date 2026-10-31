@@ -21,7 +21,7 @@ need ansible-playbook
 
 "${ANSIBLE_DIR}/setup" "${HOST}" "${USER_}" --private-key "${KEY}" \
   -e "cloud_provider=${PROVIDER}" -e "new_user_name=aidev" -e "new_user_sudoer=true" \
-  -e "authorized_pub_key=$(cat "${KEY}.pub")" \
+  -e "$(python3 -I -c 'import json, sys; print(json.dumps({"authorized_pub_key": open(sys.argv[1]).read().strip()}))' "${KEY}.pub")" \
   -e "enable_gui=${GUI}" -e "install_claude_code=${CC}" \
   -e "install_claude_desktop=${CD}" -e "install_chatgpt_desktop=${CGPT}" ${EXTRA[@]+"${EXTRA[@]}"}
 
