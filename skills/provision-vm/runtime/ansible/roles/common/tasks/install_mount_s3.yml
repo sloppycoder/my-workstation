@@ -47,3 +47,23 @@
   become: yes
   apt:
     deb: /tmp/mount-s3-src/mount-s3.deb
+
+# Leave a ready-to-edit (commented out) fstab entry so adding a mount later is just:
+# uncomment, set bucket + mount point, `sudo mkdir -p <mnt>`, `sudo mount <mnt>`.
+# Mountpoint's fstab support needs v1.18+; _netdev,nosuid,nodev are mandatory.
+- name: Look up uid/gid of {{ new_user_name }}
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ new_user_name }}"
+
+- name: Add a commented example Mountpoint for S3 mount to /etc/fstab
+  become: yes
+  ansible.builtin.blockinfile:
+    path: /etc/fstab
+    marker: "# {mark} ANSIBLE MANAGED: mount-s3 example"
+    block: |
+      # Mount an S3 bucket as {{ new_user_name }}: uncomment, set the bucket and mount point, then:
+      #   sudo mkdir -p /mnt/my-bucket && sudo systemctl daemon-reload && sudo mount /mnt/my-bucket
+      # Add allow-delete / allow-overwrite for rm / overwrites, region=<r> for a bucket in another region.
+      # Auth is the instance role (IMDS); mount-s3 runs as root under fstab, so allow-other is needed.
+      #s3://my-bucket /mnt/my-bucket mount-s3 _netdev,nosuid,nodev,nofail,rw,allow-other,uid={{ getent_passwd[new_user_name][1] }},gid={{ getent_passwd[new_user_name][2] }} 0 0
