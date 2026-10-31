@@ -1,0 +1,11 @@
+{
+  "name": "my-workstation",
+  "owner": { "name": "Li Lin" },
+  "plugins": [
+    {
+      "name": "my-workstation",
+      "source": "./",
+      "description": "Provision AI dev workstations on AWS or GCP, and manage their life cycle."
+    }
+  ]
+}

@@ -4,7 +4,7 @@ EC2 remote workstation for AI agent work, provisioned in `ap-northeast-1`
 (Tokyo) — before `provision-vm` existed as a skill, this
 instance is what the skill was extracted from.
 
-See [../../CLAUDE.md](../../CLAUDE.md) for the skill this instance came from
+See [AGENTS.md](../../AGENTS.md) for the skill this instance came from
 and the account-wide provisioning notes.
 
 ## Instance
