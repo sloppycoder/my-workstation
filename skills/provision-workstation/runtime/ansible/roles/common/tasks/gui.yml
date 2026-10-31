@@ -1,0 +1,9 @@
+# Everything GUI-related lives here. main.yml imports this file only when
+# enable_gui is true AND cloud_provider is aws (NICE DCV is AWS-only).
+- import_tasks: gui_sudo_group.yml
+- import_tasks: install_gui_desktop.yml
+- import_tasks: install_dcv.yml
+- import_tasks: install_claude_desktop.yml
+  when: install_claude_desktop | bool
+- import_tasks: install_chatgpt_desktop.yml
+  when: install_chatgpt_desktop | bool

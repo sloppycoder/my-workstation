@@ -54,16 +54,3 @@
     mode: "0440"
     validate: "visudo -cf %s"
   when: new_user_sudoer | default(false) | bool
-
-# sudoers.d NOPASSWD is enough for CLI `sudo`, but GNOME/polkit's admin-identity
-# rule only recognizes actual `sudo` Unix group membership. Without this, GUI
-# privilege prompts (Settings, package updates, etc.) fall back to the
-# cloud-init bootstrap user instead of authenticating as new_user_name.
-# Requires a fresh login/session to take effect.
-- name: Add '{{ new_user_name }}' to the sudo group for GUI polkit prompts
-  become: yes
-  ansible.builtin.user:
-    name: "{{ new_user_name }}"
-    groups: sudo
-    append: yes
-  when: enable_gui | bool

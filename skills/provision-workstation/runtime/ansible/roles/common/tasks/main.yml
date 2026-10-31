@@ -1,3 +1,14 @@
+- name: Refuse GUI on non-AWS providers
+  ansible.builtin.assert:
+    that: not (enable_gui | bool) or cloud_provider == 'aws'
+    fail_msg: "enable_gui requires cloud_provider=aws (NICE DCV is AWS-only)"
+    quiet: true
+- name: Refuse desktop apps without GUI
+  ansible.builtin.assert:
+    that: not ((install_claude_desktop | bool or install_chatgpt_desktop | bool) and not (enable_gui | bool))
+    fail_msg: "install_claude_desktop / install_chatgpt_desktop require enable_gui=true"
+    quiet: true
+
 - import_tasks: install_packages.yml
 - import_tasks: create_new_user.yml
 - import_tasks: install_uv.yml
@@ -5,14 +16,11 @@
 - import_tasks: install_gh_cli.yml
 - import_tasks: install_rclone.yml
 - import_tasks: install_mount_s3.yml
+  when: cloud_provider == 'aws'
+- import_tasks: install_gcsfuse.yml
+  when: cloud_provider == 'gcp'
 - import_tasks: install_ddclient.yml
-- import_tasks: install_gui_desktop.yml
-  when: enable_gui | bool
-- import_tasks: install_dcv.yml
-  when: enable_gui | bool
 - import_tasks: install_claude_code.yml
   when: install_claude_code | bool
-- import_tasks: install_claude_desktop.yml
-  when: install_claude_desktop | bool and enable_gui | bool
-- import_tasks: install_chatgpt_desktop.yml
-  when: install_chatgpt_desktop | bool and enable_gui | bool
+- import_tasks: gui.yml
+  when: (enable_gui | bool) and cloud_provider == 'aws'

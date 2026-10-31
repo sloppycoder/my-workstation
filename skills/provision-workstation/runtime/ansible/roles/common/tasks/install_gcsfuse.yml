@@ -1,0 +1,25 @@
+# Cloud Storage FUSE (gcsfuse) -- GCP counterpart of Mountpoint for S3.
+# e.g. `gcsfuse <bucket> <mountpoint>`. Uses the VM service account's
+# credentials automatically via the metadata server.
+- name: Add Google Cloud apt signing key
+  become: yes
+  get_url:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    dest: /usr/share/keyrings/cloud.google.asc
+    mode: "0644"
+
+- name: Add gcsfuse apt repo
+  become: yes
+  copy:
+    dest: /etc/apt/sources.list.d/gcsfuse.list
+    content: "deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt gcsfuse-{{ ansible_facts['distribution_release'] }} main\n"
+    mode: "0644"
+
+- name: Install gcsfuse
+  become: yes
+  apt:
+    update_cache: yes
+    name: gcsfuse
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
