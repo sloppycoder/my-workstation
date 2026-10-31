@@ -1,5 +1,5 @@
 ---
-name: provision-ai-workstation
+name: provision-workstation
 description: Interview the user, then provision an AWS EC2 dev workstation (optionally with a GNOME desktop + NICE DCV remote desktop, and a chosen subset of Claude Code CLI / Claude Desktop / Codex CLI / ChatGPT Desktop) by running AWS CLI and SSH commands directly, then handing off to the bundled Ansible role for the Linux-side bootstrap.
 ---
 
@@ -52,7 +52,7 @@ passwordless sudo.
 ## 2. Procedure
 
 Run each step as its own command via the Bash tool. `SKILL_DIR` below means
-this skill's own directory (`.../skills/provision-ai-workstation`).
+this skill's own directory (`.../skills/provision-workstation`).
 
 ### 2.1 Resolve the AMI
 
@@ -251,7 +251,7 @@ aws ec2 run-instances --region "$REGION" \
   --iam-instance-profile Name=ai-workstation-role \
   --block-device-mappings "[{\"DeviceName\":\"$ROOT_DEVICE_NAME\",\"Ebs\":{\"VolumeSize\":$ROOT_VOLUME_GB,\"VolumeType\":\"gp3\",\"DeleteOnTermination\":true}}]" \
   --network-interfaces "[{\"DeviceIndex\":0,\"SubnetId\":\"$SUBNET_ID\",\"Groups\":[\"$SECURITY_GROUP_ID\"],\"AssociatePublicIpAddress\":true}]" \
-  --tag-specifications "[{\"ResourceType\":\"instance\",\"Tags\":[{\"Key\":\"Name\",\"Value\":\"$INSTANCE_NAME\"},{\"Key\":\"ManagedBy\",\"Value\":\"provision-ai-workstation\"}]}]" \
+  --tag-specifications "[{\"ResourceType\":\"instance\",\"Tags\":[{\"Key\":\"Name\",\"Value\":\"$INSTANCE_NAME\"},{\"Key\":\"ManagedBy\",\"Value\":\"provision-workstation\"}]}]" \
   --query 'Instances[0].InstanceId' --output text
 ```
 

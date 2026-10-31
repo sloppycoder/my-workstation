@@ -1,7 +1,7 @@
 # aidev Tokyo AI Workstation
 
 EC2 remote workstation for AI agent work, provisioned in `ap-northeast-1`
-(Tokyo) — before `provision-ai-workstation` existed as a skill, this
+(Tokyo) — before `provision-workstation` existed as a skill, this
 instance is what the skill was extracted from.
 
 See [../../CLAUDE.md](../../CLAUDE.md) for the skill this instance came from
@@ -53,7 +53,7 @@ anything touching security groups, VPCs, or IAM itself. Ask if any of these are 
 ## `aidev` user setup
 
 Provisioned via the Ansible playbook that later became
-[../../skills/provision-ai-workstation/runtime/ansible](../../skills/provision-ai-workstation/runtime/ansible)
+[../../skills/provision-workstation/runtime/ansible](../../skills/provision-workstation/runtime/ansible)
 (originally run out of `linux-vm-provisioner`'s equivalent role with
 `enable_local_model_serving=false`, `new_user_sudoer=true`):
 
@@ -78,7 +78,7 @@ OpenAI Codex CLI 0.148.0 — installed natively for `aidev` via the official ins
 had hung during initial provisioning under Ansible's `become` (which allocates a pty,
 so the installer's trailing interactive shell never received EOF and blocked forever);
 running it directly as `sudo -iu aidev ... < /dev/null` avoided that and completed
-cleanly — this is why `provision-ai-workstation` installs Codex via a direct SSH step
+cleanly — this is why `provision-workstation` installs Codex via a direct SSH step
 instead of an Ansible task. Not yet authenticated — run `codex` and sign in with
 ChatGPT on first use.
 
@@ -104,13 +104,13 @@ ChatGPT on first use.
   expect rough edges.)
 - `rclone` v1.75.0 — installed via the official `rclone.org/install.sh` script (Debian's
   own apt package is a stale 1.60.1, still true as of Ubuntu 24.04 / Debian 13 — this is
-  why `provision-ai-workstation` always installs rclone this way). Google Drive support
+  why `provision-workstation` always installs rclone this way). Google Drive support
   is built into rclone itself, no separate plugin needed — run `rclone config` and pick
   the `drive` backend.
 - `mount-s3` v1.23.0 (AWS Mountpoint for Amazon S3) — official `.deb` from
   `s3.amazonaws.com/mountpoint-s3-release`, GPG signature verified against AWS's published
   key before install. FUSE-mount an S3 bucket with e.g. `mount-s3 <bucket> <mountpoint>`.
-  (Not included in the `provision-ai-workstation` skill — installed manually on this
+  (Not included in the `provision-workstation` skill — installed manually on this
   instance only.)
 
 `rclone` has not been configured with credentials on this instance — package only, per
@@ -200,7 +200,7 @@ current address:
   network path and request construction are both correct.
 
 This exact pattern (dummy Cloudflare config, real values filled in later) is
-now baked into `provision-ai-workstation` for every instance it creates —
+now baked into `provision-workstation` for every instance it creates —
 see `install_ddclient.yml` in the skill's Ansible role.
 
 ## Notes / caveats
@@ -217,7 +217,7 @@ see `install_ddclient.yml` in the skill's Ansible role.
   `redis-server`) were confirmed active afterward.
 - **Retired `gphoto` instance (2026-08-19):** a separate, undocumented EC2 instance
   (`i-041fc8fa02020f777`, `t3.medium`, us-west-2) discovered live in a prior session —
-  never part of `provision-ai-workstation`. It mounted an S3 bucket
+  never part of `provision-workstation`. It mounted an S3 bucket
   (`gphoto-025604691335`) holding Google Photos takeout data and a `track_me.db` app
   database via the same `mount-s3` pattern used here. Before deletion, its 20 GB root
   EBS volume was snapshotted to `snap-0ade800e479d7635e` (us-west-2, **not copied

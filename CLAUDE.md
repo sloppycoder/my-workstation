@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repo hosts `provision-ai-workstation`, an interview-driven Claude Code
+This repo hosts `provision-workstation`, an interview-driven Claude Code
 skill for standing up AWS EC2 AI dev workstations, plus a lightweight index of
 instances actually provisioned with it. Full per-instance detail (IAM
 policies, installed packages, access info, etc.) lives one file per instance
@@ -13,7 +13,7 @@ below for the index and links.
 ## Running the skill
 
 The skill lives at
-[skills/provision-ai-workstation/SKILL.md](./skills/provision-ai-workstation/SKILL.md)
+[skills/provision-workstation/SKILL.md](./skills/provision-workstation/SKILL.md)
 (symlinked from `.claude/skills/`, so it's directly invocable). That file is
 the source of truth for the exact procedure and gotchas — this section is
 just the shape of it:
@@ -40,7 +40,7 @@ just the shape of it:
   anything touching IAM/VPC/security groups — see SKILL.md §2.4 for the
   exact policy.
 - **Linux-side bootstrap is a proper Ansible role**, at
-  `skills/provision-ai-workstation/runtime/ansible/`, run via its `setup`
+  `skills/provision-workstation/runtime/ansible/`, run via its `setup`
   entrypoint after SSH is up. It's deterministic and doesn't benefit from
   live improvisation, unlike the AWS orchestration above. If `ansible-playbook`
   isn't already available on the provisioning machine, the preferred install
