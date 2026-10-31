@@ -1,6 +1,6 @@
 ---
 name: provision-vm
-description: Interview the user, then provision a cloud dev workstation on AWS (EC2) or GCP (Compute Engine) — optionally with a GNOME desktop + NICE DCV remote desktop (AWS only) and a chosen subset of Claude Code CLI / Codex CLI / Claude Desktop / ChatGPT Desktop — using the bundled per-provider scripts, then the bundled Ansible role for the Linux-side bootstrap.
+description: Interview the user, then provision a cloud dev workstation on AWS (EC2) or GCP (Compute Engine) — optionally with a GNOME desktop + NICE DCV remote desktop (AWS only) with Codex CLI always installed plus a chosen subset of Claude Code CLI / Claude Desktop / ChatGPT Desktop — using the bundled per-provider scripts, then the bundled Ansible role for the Linux-side bootstrap.
 ---
 
 # Provision Workstation
@@ -35,8 +35,8 @@ user's request already answers an item, don't re-ask it.
 4. **Base image** — Debian 13 (default) or Ubuntu 24.04 LTS; both official.
 5. **GUI desktop** — **AWS only**, default **no**. Yes adds GNOME + NICE DCV.
    On GCP don't offer it; if the user asks, explain DCV is AWS-only.
-6. **Components** (none preselected): Claude Code CLI, Codex CLI, and — only
-   with GUI — Claude Desktop, ChatGPT Desktop. If a desktop app is chosen
+6. **Components** (none preselected): Claude Code CLI, and — only with GUI —
+   Claude Desktop, ChatGPT Desktop. **Codex CLI is always installed**; don't ask. If a desktop app is chosen
    without GUI, point out the conflict and ask; never drop it silently.
 7. **SSH key** — AWS: name of an existing EC2 key pair (never created here) and
    its private key path. GCP: just the private key path; the matching `.pub` is
@@ -79,8 +79,8 @@ Substitute `aws`/`gcp` for `$P` below. Flags are shown in each script's header.
    cheapest) and say which you chose. Re-run `create_vm.sh` with the new type and
    use that type in step 6 (`register.sh`). Nothing is left behind on exit 5.
 5. **Bootstrap** — `scripts/bootstrap.sh --host $PUBLIC_IP --user $BOOT_USER
-   --key KEY --provider $P [--gui] [--claude-code] [--codex] [--claude-desktop]
-   [--chatgpt-desktop]`. Runs the Ansible role, then installs Codex over a direct
+   --key KEY --provider $P [--gui] [--claude-code] [--claude-desktop]
+   [--chatgpt-desktop]`. Runs the Ansible role, then always installs Codex over a direct
    ssh command (its installer hangs under Ansible's `become`). First wait for ssh
    with `ssh -o StrictHostKeyChecking=no -i KEY $BOOT_USER@$PUBLIC_IP true`
    (retry ~every 5 s for a few minutes). If `ansible-playbook` is missing:
