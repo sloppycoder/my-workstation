@@ -77,7 +77,10 @@ Useful keys: `SEED_PREFIX` (seed snapshot/AMI name prefix, default the VM name),
 
 ## Status
 
-Untested end to end on a live VM except the read-only plan output (`--yes` omitted).
-The GCP scripts are ported from a tracker skill that was tested on 2026-11-01; the
-parts that are new here (single seed with label, live scratch detach, config file,
-AWS scripts) have not been run for real. Test on a throwaway VM first.
+- **GCP: tested end to end on 2026-11-01** with a throwaway VM: first seed (3.5 min,
+  VM restarted), live scratch add and remove (no VM stop), shelve `--delete` (seed
+  replaced only after READY), recreate from the seed (~1m40s, all tools present),
+  `create_vm.sh` exit 5 on a nonexistent machine type (boot disk cleaned up), and
+  `destroy_vm.sh`.
+- **AWS: not yet run** (AMI-based seed, EBS scratch with LABEL fstab, NoDevice to keep the
+  scratch volume out of the AMI). Test on a throwaway VM first.

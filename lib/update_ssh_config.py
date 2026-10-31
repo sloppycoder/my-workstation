@@ -77,6 +77,18 @@ def update(
     return "".join(lines), old
 
 
+def remove(text: str, host: str) -> tuple[str, bool]:
+    """Return the config text without the ``Host host`` block, and whether it existed."""
+    lines = text.splitlines(keepends=True)
+    bounds = block_bounds(lines, host)
+    if bounds is None:
+        return text, False
+    start, end = bounds
+    while start > 0 and not lines[start - 1].strip():  # also drop the blank line before it
+        start -= 1
+    return "".join(lines[:start] + lines[end:]), True
+
+
 def main() -> None:
     """Parse arguments and rewrite the config file in place."""
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -87,9 +99,17 @@ def main() -> None:
     p.add_argument("--template", help="Clone this existing Host block for a new alias")
     p.add_argument("--config", type=Path, default=Path.home() / ".ssh" / "config")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--remove", action="store_true", help="Delete the Host block instead (IP is ignored)")
     args = p.parse_args()
 
     text = args.config.read_text() if args.config.exists() else ""
+    if args.remove:
+        new, found = remove(text, args.host)
+        print(f"Host {args.host}: {'block removed' if found else 'no block'}")
+        if found and not args.dry_run:
+            shutil.copy2(args.config, args.config.with_name(args.config.name + ".bak"))
+            args.config.write_text(new)
+        return
     new, old = update(text, args.host, args.ip, args.user, args.template, args.identity)
     print(f"Host {args.host}: HostName {old or '(none)'} -> {args.ip}")
     if new == text or args.dry_run:

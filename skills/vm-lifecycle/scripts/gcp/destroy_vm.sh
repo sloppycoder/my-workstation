@@ -10,7 +10,7 @@ STATUS="$(vm_status)"
 DISKS=""
 for d in "${NAME}" "${NAME}-scratch"; do [[ -z "$(status_of disks "${d}")" ]] || DISKS+="${d} "; done
 SEEDS="$(seeds 2>/dev/null)"
-log "Will DELETE: instance ${NAME} (${STATUS:-absent}); disks: ${DISKS:-none}; seed snapshots: ${SEEDS:-none}; ${CONFIG_DIR}/${NAME}.env"
+log "Will DELETE: instance ${NAME} (${STATUS:-absent}); disks: ${DISKS:-none}; seed snapshots: ${SEEDS:-none}; firewall rule ${NAME}-allow-me; ssh alias; ${CONFIG_DIR}/${NAME}.env"
 log "This cannot be undone."
 ((YES)) || { log "Not doing it: re-run with --yes."; exit 0; }
 if [[ -n "${STATUS}" ]]; then
@@ -22,5 +22,9 @@ for d in ${DISKS}; do
   gcloud compute disks delete "${d}" "${GC[@]}" --quiet || log "could not delete disk ${d}"
 done
 for s in ${SEEDS}; do gcloud compute snapshots delete "${s}" --project="${PROJECT}" --quiet || log "could not delete ${s}"; done
+if gcloud compute firewall-rules describe "${NAME}-allow-me" --project="${PROJECT}" >/dev/null 2>&1; then
+  gcloud compute firewall-rules delete "${NAME}-allow-me" --project="${PROJECT}" --quiet || log "could not delete firewall rule ${NAME}-allow-me"
+fi
+forget_ssh "${NAME}"
 rm -f "${CONFIG_DIR}/${NAME}.env"
-log "Destroyed ${NAME}. (A Host ${NAME} block may remain in ~/.ssh/config.)"
+log "Destroyed ${NAME} (the shared ai-workstation service account and role are kept)."

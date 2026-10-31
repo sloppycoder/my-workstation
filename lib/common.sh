@@ -71,6 +71,16 @@ save_instance() {  # save_instance NAME KEY=VALUE...   (rewrites the file)
   chmod 600 "${CONFIG_DIR}/${name}.env"
 }
 
+# Remove the ~/.ssh/config alias NAME and its known_hosts entries (used by destroy).
+forget_ssh() {  # forget_ssh NAME
+  local ip
+  ip="$(ssh -G "$1" 2>/dev/null | awk '$1 == "hostname" {print $2}')"
+  python3 -I "${LIB_DIR}/update_ssh_config.py" "$1" 0 --remove >&2
+  for h in "$1" "${ip}"; do
+    if [[ -n "${h}" ]]; then ssh-keygen -R "${h}" >/dev/null 2>&1 || true; fi
+  done
+}
+
 # ---- ssh alias -----------------------------------------------------------
 
 # Point the ~/.ssh/config alias NAME at IP (adding the block if missing), drop

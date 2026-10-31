@@ -159,6 +159,8 @@ script waits 10 s (GCP: 15 s) for IAM propagation.
 8. gcloud's long "wait for operation" call is sometimes dropped by a proxy although
    the operation succeeds; GCP scripts tolerate the error and poll the real state.
    "…reported an error; checking whether it went through" is normal.
-9. Untested paths (written but not yet run end to end): `scripts/gcp/*`, the
-   `gcsfuse` role task, and `scripts/aws/*` after the refactor out of live commands.
-   Verify with a throwaway VM and delete it afterwards.
+9. Status: the GCP path (`scripts/gcp/*`, `gcsfuse`, bootstrap, register) was tested
+   end to end on 2026-11-01. Not yet run: `scripts/aws/*` after the refactor out of
+   live commands, and GUI/DCV. Verify with a throwaway VM and delete it afterwards.
+10. One ssh login can take 2–3 s, so `runtime/ansible/setup` enables ssh
+   multiplexing + pipelining; without it the role took 13+ minutes instead of ~1.5.
