@@ -30,8 +30,10 @@ user's request already answers an item, don't re-ask it.
 1. **Provider** — `aws` or `gcp`.
 2. **Instance name** — free text. Used for the VM name, firewall/security group
    (`<name>-sg` / `<name>-allow-me`) and the `~/.ssh/config` alias.
-3. **Location** — AWS: region (e.g. `ap-northeast-1`), no default. GCP: project
-   id and zone (e.g. `us-west1-b`), no default.
+3. **Location** — default **Oregon** on both clouds: AWS `us-west-2`, GCP zone
+   `us-west1-b` (it is a cheaper US region). Only use a pricier region such as
+   Tokyo (`ap-northeast-1`) when the user asks for it. GCP also needs the project id
+   (no default).
 4. **Base image** — Debian 13 (default) or Ubuntu 24.04 LTS; both official.
 5. **GUI desktop** — **AWS only**, default **no**. Yes adds GNOME + NICE DCV.
    On GCP don't offer it; if the user asks, explain DCV is AWS-only.
