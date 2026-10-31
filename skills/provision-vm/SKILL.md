@@ -72,9 +72,11 @@ Substitute `aws`/`gcp` for `$P` below. Flags are shown in each script's header.
    (retry ~every 5 s for a few minutes). If `ansible-playbook` is missing:
    `uv tool install ansible` (the full package — the role needs `ansible.posix`).
 6. **Register** — `scripts/register.sh --name N --provider $P --ip $PUBLIC_IP
-   --key KEY KEY=VALUE...` (pass `REGION`/`INSTANCE_ID` for AWS, `PROJECT`/`ZONE`
-   for GCP). Writes `~/.config/station-vm/<name>.env` (read by the `vm-lifecycle`
-   skill) and points the `ssh <name>` alias at the VM.
+   --key KEY KEY=VALUE...`. Writes `~/.config/station-vm/<name>.env` (read by the
+   `vm-lifecycle` skill, which needs these values to recreate the VM) and points the
+   `ssh <name>` alias at the VM. Pass — AWS: `REGION SUBNET_ID SECURITY_GROUP_ID
+   KEY_NAME INSTANCE_TYPE PROFILE_NAME` (+ `GUI=1` if GUI); GCP: `PROJECT ZONE
+   SERVICE_ACCOUNT MACHINE_TYPE`.
 7. **GUI only: reboot once and verify.** `ssh <name> sudo reboot`, wait for ssh,
    then check `gdm dcvserver dcv-console-session` are `active`. ssh returns
    ~30–40 s before `dcv-console-session` settles (it waits on `dcvserver`), so
