@@ -57,3 +57,23 @@ interview, scripts that print `KEY=value` and take `--flags`.
 No live test suite. Check changes with `bash -n`, `ansible-playbook --syntax-check`,
 `claude plugin validate .`, and read-only cloud calls; real runs need a throwaway VM
 that you delete afterwards. See "Status" in each SKILL.md for what is untested.
+
+## Releasing / version bumps
+
+Claude Code installs this plugin through the separate marketplace repo at
+`../marketplace` (GitHub `vino9net`, catalog `.claude-plugin/marketplace.json`, remote
+entry `sloppycoder/my-workstation`). Whenever you bump the version, check that
+everything affected is updated, in both repos:
+
+- This repo: `version` in **both** `.claude-plugin/plugin.json` and
+  `.codex-plugin/plugin.json` (keep them equal); `description` kept in sync across
+  both plugin.json files and `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json`.
+- `../marketplace`: the `my-workstation` entry in `.claude-plugin/marketplace.json`
+  (it pins no version, but its `description` must match what the plugin now does),
+  the my-workstation row in `README.md`, and the my-workstation section in `CLAUDE.md`.
+  Bump the marketplace's own `version` if its catalog changed.
+- If skills, scripts or flags were added/removed, update the SKILL.md files and `README.md`
+  here first; they are what the marketplace summary is derived from.
+- Run `claude plugin validate .` here, then commit and push this repo **before**
+  the marketplace (it installs from GitHub, so unpushed changes are invisible).
+  Don't commit or push either repo without the user's go-ahead.
