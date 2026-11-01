@@ -13,8 +13,8 @@ tracks no VMs: each VM's settings live in `~/.config/station-vm/<name>.env` (see
 ## Layout
 
 ```
-.claude-plugin/  plugin.json, marketplace.json     (Claude Code)
-.codex-plugin/   plugin.json                       (Codex)
+plugin.json      Agent Plugins 1.0.0 manifest         (Codex, Antigravity)
+.claude-plugin/  plugin.json, marketplace.json        (Claude Code)
 .agents/         plugins/marketplace.json (Codex), skills -> ../skills
 .claude/skills -> ../skills                        (in-repo use of the skills)
 lib/             common.sh, update_ssh_config.py   (shared by all scripts)
@@ -65,8 +65,8 @@ Claude Code installs this plugin through the separate marketplace repo at
 entry `sloppycoder/my-workstation`). Whenever you bump the version, check that
 everything affected is updated, in both repos:
 
-- This repo: `version` in **both** `.claude-plugin/plugin.json` and
-  `.codex-plugin/plugin.json` (keep them equal); `description` kept in sync across
+- This repo: `version` in **both** `plugin.json` and
+  `.claude-plugin/plugin.json` (keep them equal); `description` kept in sync across
   both plugin.json files and `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json`.
 - `../marketplace`: the `my-workstation` entry in `.claude-plugin/marketplace.json`
   (it pins no version, but its `description` must match what the plugin now does),

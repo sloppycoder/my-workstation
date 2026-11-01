@@ -1,6 +1,6 @@
 # my-workstation
 
-A plugin for **Claude Code** and **Codex** that manages personal **developer workstations in AWS and GCP**:
+A plugin for **Claude Code**, **Codex**, and **Antigravity CLI** that manages personal **developer workstations in AWS and GCP**:
 create a cloud VM already set up for AI-assisted development, snapshot it as a reusable "seed", then
 shelve, recreate, and destroy it, and add or remove scratch disks as you go.
 
@@ -78,7 +78,43 @@ Claude Code:
 /plugin install my-workstation --marketplace sloppycoder/my-workstation
 ```
 
-Codex: the marketplace file is `.agents/plugins/marketplace.json` (see the Codex plugin docs).
+Codex CLI (run once from any directory):
+
+```bash
+codex plugin marketplace add sloppycoder/my-workstation
+codex plugin add my-workstation@my-workstation
+```
+
+This repo is both the plugin and a single-plugin marketplace, defined in
+`.agents/plugins/marketplace.json`. In `my-workstation@my-workstation`, the first name is the plugin
+and the second is the marketplace. Installation makes the plugin available to your user across repos.
+Start a fresh Codex session in any repo after installing.
+
+Check that it is installed and enabled:
+
+```bash
+codex plugin list --marketplace my-workstation
+```
+
+In Codex, type `$` and select a skill from autocomplete, or browse with `/skills`. For example:
+
+```text
+$my-workstation:provision-vm create a GCP VM named dev1
+$my-workstation:vm-lifecycle dev1 seed
+```
+
+See the [Codex plugin documentation](https://developers.openai.com/plugins/build/plugins) for marketplace setup.
+
+Antigravity CLI (`agy`):
+
+```bash
+git clone https://github.com/sloppycoder/my-workstation.git
+agy plugin install ./my-workstation
+agy plugin list
+```
+
+(Or if you already installed it in Claude Code, run `agy plugin import claude`.)
+
 You can also use the skills directly from a clone, since `.claude/skills` and `.agents/skills` point at `skills/`.
 
 ## Configuration
@@ -90,8 +126,9 @@ key. Copy and edit the files in [`examples/`](./examples/) to create them by han
 ## Status
 
 Tested end to end on 2026-11-01 on both clouds (Debian 13, no GUI): provisioning, seed, scratch, shelve,
-recreate, destroy, and mounting a bucket through each fstab example. **Not yet tested:** the AWS GUI/NICE DCV
-path, Ubuntu images, and installing the plugin from GitHub with Codex.
+recreate, destroy, and mounting a bucket through each fstab example. Codex CLI installation from GitHub
+was verified on 2026-11-02: version 0.2.0 installed and enabled, with both skills available after restart.
+**Not yet tested:** the AWS GUI/NICE DCV path and Ubuntu images.
 
 More detail is in [AGENTS.md](./AGENTS.md) and the `SKILL.md` file of each skill.
 
