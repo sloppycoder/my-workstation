@@ -21,4 +21,6 @@ aws ec2 describe-instance-types --region "${REGION}" \
             "Name=processor-info.supported-architecture,Values=x86_64" \
   --query 'InstanceTypes[].[InstanceType,MemoryInfo.SizeInMiB]' --output text \
   | awk -v lo="${LO}" -v hi="${HI}" '$2>=lo && $2<=hi {print $1, $2}' | sort -k2,2n \
-  | while read -r t m; do grep -qx "${t}" "${OFFERED}" && printf '%s  %s vCPU  %.0f GB\n' "${t}" "${CPUS}" "$((m / 1024))"; done
+  | while read -r t m; do
+      if grep -qx "${t}" "${OFFERED}"; then printf '%s  %s vCPU  %.0f GB\n' "${t}" "${CPUS}" "$((m / 1024))"; fi
+    done

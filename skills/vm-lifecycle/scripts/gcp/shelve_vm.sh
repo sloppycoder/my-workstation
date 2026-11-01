@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Make (first time) or replace the VM's seed snapshot from its current boot disk.
-# The VM is stopped for a consistent snapshot, then restarted — or, with --delete,
+# The VM is stopped for a consistent snapshot and left stopped — or, with --delete,
 # deleted together with all its disks (an attached scratch disk is NOT snapshotted
 # and is lost). The old seed is removed only after the new one is READY, and the VM
-# is deleted only after that too.
+# is deleted only after that too. It never starts the VM.
 # usage: shelve_vm.sh NAME [--delete] [--yes]     (without --yes: prints the plan only)
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -19,7 +19,7 @@ OLD="$(seeds)"
 
 log "Will: stop ${NAME} (${STATUS}); snapshot ${BOOT} -> ${SNAP};${OLD:+ delete old seed(s) $(echo ${OLD});}"
 if ((DELETE)); then log "     then DELETE ${NAME} and its disks${SCRATCH:+ (including scratch ${SCRATCH}, data lost)}."
-else log "     then start ${NAME} again (scratch disk, if any, stays attached and is not snapshotted)."; fi
+else log "     then leave ${NAME} stopped (scratch disk, if any, stays attached and is not snapshotted)."; fi
 ((YES)) || { log "Not doing it: re-run with --yes."; exit 0; }
 
 [[ "${STATUS}" == TERMINATED ]] || stop_vm
@@ -38,6 +38,5 @@ if ((DELETE)); then
   poll 36 gone instances "${NAME}" || die "${NAME} still exists"
   log "Shelved. Bring it back with: create_vm.sh ${NAME}"
 else
-  start_vm
-  log "Seed updated: ${SNAP}. ${NAME} is running again."
+  log "Seed updated: ${SNAP}. ${NAME} is stopped."
 fi

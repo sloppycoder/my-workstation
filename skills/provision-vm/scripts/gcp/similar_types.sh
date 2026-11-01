@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # List machine types available in a zone with the same vCPU count as the wanted one
-# and similar memory (+/-25%), cheapest-looking first (E2/N2/N2D/N4/C3 families).
+# and similar memory (+/-25%), smallest memory first (E2/N2/N2D/N4/C3 families only).
 # Use after create_vm.sh exits 5 (type unavailable).
 # usage: similar_types.sh --project P --zone Z --vcpus N --mem-gb M
 set -euo pipefail

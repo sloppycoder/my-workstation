@@ -30,11 +30,11 @@ exists. A stopped VM still bills for its disks.
 
 | Step | Script | Notes |
 |---|---|---|
-| First seed / refresh seed | `shelve_vm.sh NAME [--yes]` | Stops the VM for a consistent snapshot, snapshots the root disk, restarts it. The scratch disk is not included. |
+| First seed / refresh seed | `shelve_vm.sh NAME [--yes]` | Stops the VM for a consistent snapshot, snapshots the root disk, leaves the VM stopped. The scratch disk is not included. |
 | Shelve | `shelve_vm.sh NAME --delete [--yes]` | Same, then deletes the VM and **all** its disks (scratch data is lost). |
 | Recreate | `create_vm.sh NAME [--machine-type T]` | New VM (root disk) from the seed; refreshes the firewall/SG source IP and the `ssh NAME` alias. |
 | Add scratch | `add_scratch.sh NAME [GB]` | Default 150 GB. Attaches live; starts the VM only if it is stopped. Formats if blank, mounts `/mnt/scratch` (mode 1777). One per VM. |
-| Remove scratch | `del_scratch.sh NAME [--stop] [--yes]` | Unmounts and detaches live; if the disk is busy (or with `--stop`) stops the VM first. **No backup; all data lost.** |
+| Remove scratch | `del_scratch.sh NAME [--yes]` | Unmounts and detaches live; if the disk is busy, stops the VM first (it stays stopped). A stopped VM is just detached. **No backup; all data lost.** |
 | Destroy | `destroy_vm.sh NAME [--yes]` | Deletes the VM, every disk, every seed, and the local config. Irreversible. |
 
 ## Rules for running them
@@ -77,8 +77,8 @@ Useful keys: `SEED_PREFIX` (seed snapshot/AMI name prefix, default the VM name),
 
 ## Status
 
-- **GCP: tested end to end on 2026-11-01** with a throwaway VM: first seed (3.5 min,
-  VM restarted), live scratch add and remove (no VM stop), shelve `--delete` (seed
+- **GCP: tested end to end on 2026-11-01** with a throwaway VM: first seed (3.5 min;
+  the VM was restarted then, but `shelve_vm.sh` now leaves it stopped), live scratch add and remove (no VM stop), shelve `--delete` (seed
   replaced only after READY), recreate from the seed (~1m40s, all tools present),
   `create_vm.sh` exit 5 on a nonexistent machine type (boot disk cleaned up), and
   `destroy_vm.sh`.

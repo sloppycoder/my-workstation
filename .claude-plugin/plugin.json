@@ -1,6 +1,6 @@
 {
   "name": "my-workstation",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "description": "Provision AI dev workstations on AWS or GCP, and manage their life cycle (seed snapshot, scratch disk, shelve, destroy).",
   "author": { "name": "Li Lin" },

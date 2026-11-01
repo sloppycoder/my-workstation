@@ -5,6 +5,7 @@
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 init "${1:-}"; shift || true
+SERVICE_ACCOUNT="${SERVICE_ACCOUNT:-ai-workstation@${PROJECT}.iam.gserviceaccount.com}"   # as made by ensure_identity.sh
 TYPE="${MACHINE_TYPE:-e2-standard-2}" SEED=""
 while [[ $# -gt 0 ]]; do case "$1" in
   --machine-type) TYPE="$2"; shift 2 ;; --snapshot) SEED="$2"; shift 2 ;;
@@ -12,7 +13,6 @@ while [[ $# -gt 0 ]]; do case "$1" in
 [[ -z "$(vm_status)" ]] || die "instance ${NAME} already exists"
 [[ -n "${SEED}" ]] || SEED="$(seeds ready | head -1)"
 [[ -n "${SEED}" ]] || die "no READY seed snapshot for ${NAME}; run shelve_vm.sh on a configured VM first"
-: "${SERVICE_ACCOUNT:?SERVICE_ACCOUNT missing in config}"
 
 # Your public IP may have changed since the VM was last up: refresh the firewall rule.
 FW="$(dirname "${BASH_SOURCE[0]}")/../../../provision-vm/scripts/gcp/ensure_network.sh"

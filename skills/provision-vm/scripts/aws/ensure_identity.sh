@@ -6,6 +6,7 @@
 set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../../lib/common.sh"
 need aws
+[[ $# -eq 0 ]] || die "usage: ensure_identity.sh"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/policies"
 ROLE=ai-workstation-role
 NEW=0

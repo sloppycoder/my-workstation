@@ -8,14 +8,17 @@ init "${1:-}"; SIZE="${2:-150}"
 [[ "${SIZE}" =~ ^[0-9]+$ ]] && ((SIZE >= 10)) || die "usage: add_scratch.sh NAME [GB >= 10]"
 IID="$(instance_id)"; [[ -n "${IID}" ]] || die "instance ${NAME} not found"
 [[ -z "$(scratch_vol)" ]] || die "${NAME} already has a scratch volume"
-[[ "$(vm_state)" == running ]] || start_vm
+[[ "$(vm_status)" == running ]] || start_vm
 AZ="$(vm_az)"
 log "Creating ${SIZE} GB volume in ${AZ} and attaching to ${NAME}..."
 VOL="$("${A[@]}" ec2 create-volume --availability-zone "${AZ}" --size "${SIZE}" --volume-type gp3 \
   --tag-specifications "ResourceType=volume,Tags=[{Key=Name,Value=${NAME}-scratch},{Key=ManagedBy,Value=my-workstation}]" \
-  --query VolumeId --output text)"
+  --query VolumeId --output text)" || { log "create reported an error; checking whether it went through..."; VOL=""; }
+vol_found() { VOL="$(scratch_vol)"; [[ -n "${VOL}" ]]; }
+[[ -n "${VOL}" ]] || poll 12 vol_found || die "volume ${NAME}-scratch was not created"
 poll 36 vol_is "${VOL}" available || die "${VOL} did not become available"
-"${A[@]}" ec2 attach-volume --volume-id "${VOL}" --instance-id "${IID}" --device "${SCRATCH_DEV}" >/dev/null
+"${A[@]}" ec2 attach-volume --volume-id "${VOL}" --instance-id "${IID}" --device "${SCRATCH_DEV}" >/dev/null \
+  || log "attach reported an error; checking whether it went through..."
 poll 36 vol_is "${VOL}" in-use || die "${VOL} did not attach"
 
 log "Formatting and mounting..."

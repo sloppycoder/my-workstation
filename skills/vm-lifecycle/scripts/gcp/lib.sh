@@ -5,6 +5,9 @@
 # gcloud's long "wait for operation" call is sometimes dropped by a proxy
 # (ProxyError) although the operation proceeds. So every mutating command is
 # written `cmd || log ...` and followed by `poll`, which checks the real end state.
+#
+# Needed in the env file: PROJECT, ZONE, SSH_USER, SSH_KEY (see create_vm.sh for
+# anything it needs beyond these).
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../../lib/common.sh"
 need gcloud
 

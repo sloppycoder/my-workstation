@@ -3,8 +3,8 @@
 # over a direct ssh command (its installer hangs under Ansible's become).
 # usage: bootstrap.sh --host IP --user BOOT_USER --key PRIVATE_KEY --provider aws|gcp
 #          [--gui] [--claude-code] [--claude-desktop] [--chatgpt-desktop]
-# Codex CLI is always installed (not optional).
 #          [-- extra ansible-playbook args, e.g. -e ddclient_zone=...]
+# Codex CLI is always installed (not optional).
 set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../../../lib/common.sh"
 ANSIBLE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/../runtime/ansible"

@@ -15,6 +15,7 @@ STATUS="$(vm_status)"
 
 log "Creating ${DISK} (${SIZE} GB) and attaching to ${NAME}..."
 gcloud compute disks create "${DISK}" "${GC[@]}" --size="${SIZE}" --type=pd-balanced \
+  --labels=managed-by=my-workstation \
   || log "create reported an error; checking whether it went through..."
 poll 36 has_status disks "${DISK}" READY || die "${DISK} did not become READY"
 gcloud compute instances attach-disk "${NAME}" "${GC[@]}" --disk="${DISK}" --device-name=scratch \

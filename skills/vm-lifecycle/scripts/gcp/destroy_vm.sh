@@ -5,7 +5,10 @@
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 init "${1:-}"; shift || true
-[[ "${1:-}" == "--yes" ]] && YES=1 || YES=0
+YES=0
+while [[ $# -gt 0 ]]; do case "$1" in --yes) YES=1; shift ;;
+  *) die "usage: destroy_vm.sh NAME [--yes]" ;; esac; done
+FAILED=0; fail() { log "$*"; FAILED=1; }
 STATUS="$(vm_status)"
 DISKS=""
 for d in "${NAME}" "${NAME}-scratch"; do [[ -z "$(status_of disks "${d}")" ]] || DISKS+="${d} "; done
@@ -19,11 +22,15 @@ if [[ -n "${STATUS}" ]]; then
 fi
 for d in ${DISKS}; do
   [[ -n "$(status_of disks "${d}")" ]] || continue   # already gone with the instance
-  gcloud compute disks delete "${d}" "${GC[@]}" --quiet || log "could not delete disk ${d}"
+  gcloud compute disks delete "${d}" "${GC[@]}" --quiet || fail "could not delete disk ${d}"
 done
-for s in ${SEEDS}; do gcloud compute snapshots delete "${s}" --project="${PROJECT}" --quiet || log "could not delete ${s}"; done
+for s in ${SEEDS}; do gcloud compute snapshots delete "${s}" --project="${PROJECT}" --quiet || fail "could not delete ${s}"; done
 if gcloud compute firewall-rules describe "${NAME}-allow-me" --project="${PROJECT}" >/dev/null 2>&1; then
-  gcloud compute firewall-rules delete "${NAME}-allow-me" --project="${PROJECT}" --quiet || log "could not delete firewall rule ${NAME}-allow-me"
+  gcloud compute firewall-rules delete "${NAME}-allow-me" --project="${PROJECT}" --quiet || fail "could not delete firewall rule ${NAME}-allow-me"
+fi
+if ((FAILED)); then
+  log "Some resources could not be deleted (see above). Kept ${CONFIG_DIR}/${NAME}.env and the ssh alias; fix and re-run."
+  exit 1
 fi
 forget_ssh "${NAME}"
 rm -f "${CONFIG_DIR}/${NAME}.env"
