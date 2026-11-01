@@ -14,4 +14,4 @@ Codex: the marketplace is `.agents/plugins/marketplace.json`; see the Codex plug
 Typical flow: run `provision-vm` once per project → log in and configure the VM →
 `vm-lifecycle` to take the seed snapshot → then add/remove scratch disks and
 refresh the seed as needed. Details: [AGENTS.md](./AGENTS.md), the SKILL.md files,
-and [docs/instances/](./docs/instances/).
+and the config examples in [examples/](./examples/).

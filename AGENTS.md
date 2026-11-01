@@ -5,10 +5,10 @@ Instructions for coding agents (Claude Code, Codex, ...) working in this repo.
 ## Purpose
 
 `my-workstation` is a plugin (Claude Code and Codex) with two skills for
-personal cloud dev VMs on **AWS** and **GCP**, plus a lightweight index of VMs
-actually provisioned with it. Per-instance detail (IAM, packages, access info)
-lives one file per instance under `docs/instances/`, not here — keep this file
-from growing as more VMs are provisioned.
+personal cloud dev VMs on **AWS** and **GCP**: `provision-vm` creates a VM and
+bootstraps it, `vm-lifecycle` manages its seed snapshot and scratch disk. The repo
+tracks no VMs: each VM's settings live in `~/.config/station-vm/<name>.env` (see
+`examples/`), so don't write per-VM detail (ids, IPs, IAM dumps) into this file.
 
 ## Layout
 
@@ -21,7 +21,6 @@ lib/             common.sh, update_ssh_config.py   (shared by all scripts)
 skills/provision-vm/    SKILL.md, scripts/{aws,gcp}/, scripts/*.sh, runtime/ansible/
 skills/vm-lifecycle/    SKILL.md, scripts/{aws,gcp}/
 examples/        *.env.example: reference copies of ~/.config/station-vm/*.env
-docs/instances/  one file per provisioned VM
 ```
 
 SKILL.md files are the source of truth for procedure and gotchas; read them
@@ -58,17 +57,3 @@ interview, scripts that print `KEY=value` and take `--flags`.
 No live test suite. Check changes with `bash -n`, `ansible-playbook --syntax-check`,
 `claude plugin validate .`, and read-only cloud calls; real runs need a throwaway VM
 that you delete afterwards. See "Status" in each SKILL.md for what is untested.
-
-## Provisioned instances
-
-Detail for each instance lives in its own file under `docs/instances/` — this
-index just tracks what exists and where.
-
-| Instance | Region | Purpose | Status |
-|---|---|---|---|
-| [aidev-workstation](./docs/instances/aidev-workstation.md) | ap-northeast-1 (Tokyo) | GUI + CLI AI dev workstation; also hosts the `gphoto` S3 mount | Active |
-
-Retired: a standalone `gphoto` EC2 instance in us-west-2 (never part of this
-skill) was decommissioned 2026-08-19 — its role was absorbed into
-aidev-workstation. See that instance's doc for the full history and the
-backup snapshot ID.
