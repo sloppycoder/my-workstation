@@ -165,7 +165,10 @@ script waits 10 s (GCP: 15 s) for IAM propagation.
 9. Status: GCP (`scripts/gcp/*`, `gcsfuse`) and AWS without GUI (`scripts/aws/*`,
    `mount-s3`, no default VPC fallback) were tested end to end on 2026-11-01 in the
    Oregon regions. **Not yet run: the GUI/DCV path** (`enable_gui` on AWS). Verify with
-   a throwaway VM and delete it afterwards.
+   a throwaway VM and delete it afterwards. A second full run on both clouds passed on
+   2026-11-01, including mounting a real bucket through each commented fstab example.
+   gcsfuse's fstab line must NOT contain `nofail` (gcsfuse forwards it to FUSE and the
+   mount fails with "invalid argument"); mount-s3's line does want `nofail`.
    AWS subnets are chosen by route table (a route to an internet gateway), not by
    `MapPublicIpOnLaunch`, which can be false on perfectly public subnets.
 10. One ssh login can take 2–3 s, so `runtime/ansible/setup` enables ssh

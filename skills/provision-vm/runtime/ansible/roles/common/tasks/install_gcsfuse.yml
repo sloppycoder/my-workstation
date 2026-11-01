@@ -39,5 +39,8 @@
     block: |
       # Mount a Cloud Storage bucket as {{ new_user_name }}: uncomment, set the bucket and
       # mount point, then: sudo mkdir -p /mnt/my-bucket && sudo systemctl daemon-reload && sudo mount /mnt/my-bucket
-      # fstab flags use underscores (implicit_dirs, not implicit-dirs). Auth is the VM's service account.
-      #my-bucket /mnt/my-bucket gcsfuse rw,_netdev,nofail,allow_other,uid={{ getent_passwd[new_user_name][1] }},gid={{ getent_passwd[new_user_name][2] }} 0 0
+      # Copied from a working mount (tracker VM, gcsfuse 3.13.0). fstab flags use underscores
+      # (implicit_dirs, not implicit-dirs). Auth is the VM's service account. Do NOT add nofail:
+      # gcsfuse forwards it to FUSE and the mount fails with "invalid argument". x-systemd.* options
+      # are consumed by systemd/mount. implicit_dirs lists folders that have no placeholder object.
+      #my-bucket /mnt/my-bucket gcsfuse rw,_netdev,implicit_dirs,allow_other,uid={{ getent_passwd[new_user_name][1] }},gid={{ getent_passwd[new_user_name][2] }},x-systemd.device-timeout=10 0 0
